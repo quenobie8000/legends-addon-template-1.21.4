@@ -1,0 +1,93 @@
+package legends.ultra.cool.addons.hud.widget;
+
+import legends.ultra.cool.addons.hud.HudWidget;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+
+public class CounterWidget extends HudWidget {
+
+    private int ticksElapsed = 0;
+    private int value = 0;
+    private int ticksPerIncrement = 20; // 1 second
+    private boolean ticking = false;
+
+    public CounterWidget(int x, int y) {
+        super("Counter", x, y);
+    }
+
+    // Called from ClientTickHandler
+    public void tick() {
+        ticking = true;
+        ticksElapsed++;
+
+        if (ticksElapsed >= ticksPerIncrement) {
+            value++;
+            ticksElapsed = 0;
+        }
+    }
+
+    public void reset() {
+        ticksElapsed = 0;
+        value = 0;
+    }
+
+    public void stop() {
+        ticking = false;
+    }
+
+    @Override
+    public void render(DrawContext context) {
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        String text = "Time: " + value;
+
+        int width = client.textRenderer.getWidth(text);
+        int height = client.textRenderer.fontHeight;
+
+        // background
+        if (style.drawBackground) {
+            context.fill(
+                    (int) (x - 2),
+                    (int) (y - 2),
+                    (int) (x + width + 2),
+                    (int) (y + height + 2),
+                    style.backgroundColor
+            );
+        }
+
+        // border
+        if (style.drawBorder) {
+            context.drawBorder(
+                    (int) (x - 2),
+                    (int) (y - 2),
+                    getWidth() + 4,
+                    getHeight() + 4,
+                    style.borderColor
+            );
+        }
+
+        context.drawText(
+                client.textRenderer,
+                text,
+                (int) x,
+                (int) y,
+                style.textColor,
+                false
+        );
+    }
+
+    @Override
+    public int getWidth() {
+        return MinecraftClient.getInstance()
+                .textRenderer
+                .getWidth("Time: " + value);
+    }
+
+    @Override
+    public int getHeight() {
+        return MinecraftClient.getInstance()
+                .textRenderer
+                .fontHeight;
+    }
+}
+

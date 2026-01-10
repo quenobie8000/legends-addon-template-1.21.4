@@ -1,0 +1,9 @@
+{
+	"required": true,
+	"package": "legends.ultra.cool.addons.mixin.client",
+	"compatibilityLevel": "JAVA_21",
+	"client": [],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
