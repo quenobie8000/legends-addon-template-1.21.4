@@ -10,11 +10,6 @@ public class WorldJoinLeaveHandler {
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             // World left
-            HudManager.getWidgets().forEach(widget -> {
-                if (widget instanceof CounterWidget counter) {
-                    counter.stop();
-                }
-            });
         });
 
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {

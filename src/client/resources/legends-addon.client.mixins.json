@@ -1,9 +1,13 @@
 {
-	"required": true,
-	"package": "legends.ultra.cool.addons.mixin.client",
-	"compatibilityLevel": "JAVA_21",
-	"client": [],
-	"injectors": {
-		"defaultRequire": 1
-	}
+  "required": true,
+  "package": "legends.ultra.cool.addons.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "EntityRenderStateAccessor",
+    "EntityRendererDisplayNameMixin",
+    "EntityRendererMultilineLabelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

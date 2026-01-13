@@ -8,7 +8,7 @@ public class ClientTickHandler {
     public static void init() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             HudManager.getWidgets().forEach(widget -> {
-                if (widget instanceof CounterWidget counter) {
+                if (widget instanceof CounterWidget counter && counter.enabled) {
                     counter.tick();
                 }
             });

@@ -6,6 +6,7 @@ import legends.ultra.cool.addons.events.WorldJoinLeaveHandler;
 import legends.ultra.cool.addons.hud.HudManager;
 import legends.ultra.cool.addons.hud.HudRenderer;
 import legends.ultra.cool.addons.hud.HudWidget;
+import legends.ultra.cool.addons.hud.otherTypes.NameplateWidget;
 import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.TextWidget;
 import legends.ultra.cool.addons.input.Keybinds;
@@ -31,9 +32,11 @@ public class LegendsAddonClient implements ClientModInitializer {
 
         TextWidget textWidget = new TextWidget(10, 10, "test");
         CounterWidget counterWidget = new CounterWidget(10, 30);
+        NameplateWidget nameplateWidget = new NameplateWidget();
 
         addWidget(textWidget);
         addWidget(counterWidget);
+        addWidget(nameplateWidget);
     }
 
     public void addWidget(HudWidget w) {

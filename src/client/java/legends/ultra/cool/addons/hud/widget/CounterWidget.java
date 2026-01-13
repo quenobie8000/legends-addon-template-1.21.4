@@ -9,7 +9,6 @@ public class CounterWidget extends HudWidget {
     private int ticksElapsed = 0;
     private int value = 0;
     private int ticksPerIncrement = 20; // 1 second
-    private boolean ticking = false;
 
     public CounterWidget(int x, int y) {
         super("Counter", x, y);
@@ -17,7 +16,6 @@ public class CounterWidget extends HudWidget {
 
     // Called from ClientTickHandler
     public void tick() {
-        ticking = true;
         ticksElapsed++;
 
         if (ticksElapsed >= ticksPerIncrement) {
@@ -29,10 +27,6 @@ public class CounterWidget extends HudWidget {
     public void reset() {
         ticksElapsed = 0;
         value = 0;
-    }
-
-    public void stop() {
-        ticking = false;
     }
 
     @Override

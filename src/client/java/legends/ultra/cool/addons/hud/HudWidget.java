@@ -1,6 +1,5 @@
 package legends.ultra.cool.addons.hud;
 
-import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.settings.WidgetStyle;
 import net.minecraft.client.gui.DrawContext;
 
@@ -27,13 +26,6 @@ public abstract class HudWidget {
 
     public void toggle() {
         enabled = !enabled;
-        if (!enabled) {
-            HudManager.getWidgets().forEach(widget -> {
-                if (widget instanceof CounterWidget counter) {
-                    counter.stop();
-                }
-            });
-        }
     }
 
     public abstract void render(DrawContext context);
