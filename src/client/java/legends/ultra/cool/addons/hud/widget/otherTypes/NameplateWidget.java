@@ -36,14 +36,15 @@ public class NameplateWidget extends HudWidget {
 
     @Override
     public boolean hasSettings() {
-        return false; // disables the settings modal for this widget
+        return true;
     }
 
     @Override
     public List<HudSetting> getSettings() {
         return List.of(
-                HudSetting.slider("yOffset", "Height",0f,2f,0.25f),
-                HudSetting.slider("scale", "Scale",0.1f, 2f, 0.25f)
+                HudSetting.slider("yOffset", "Height",0f,2f,0.05f),
+                HudSetting.slider("scale", "Scale",0.1f, 2f, 0.05f),
+                HudSetting.slider("range", "Block range",1f, 100f, 1f)
         );
     }
 }

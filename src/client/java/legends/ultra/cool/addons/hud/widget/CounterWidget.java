@@ -89,11 +89,11 @@ public class CounterWidget extends HudWidget {
     @Override
     public List<HudSetting> getSettings() {
         return List.of(
-                HudSetting.toggle("bgToggle", "Background"),
-                HudSetting.color("bgColor", "BG Color"),
-                HudSetting.toggle("brdToggle", "Background"),
-                HudSetting.color("brdColor", "Border Color"),
-                HudSetting.color("txtColor", "Text Color")
+                HudSetting.toggle("drawBackground", "Background"),
+                HudSetting.color("backgroundColor", "BG Color"),
+                HudSetting.toggle("drawBorder", "Border"),
+                HudSetting.color("borderColor", "Border Color"),
+                HudSetting.color("textColor", "Text Color")
         );
     }
 }

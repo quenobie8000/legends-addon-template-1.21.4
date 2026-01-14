@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 import javax.naming.Context;
+import java.util.function.Consumer;
 
 public class HudEditorScreen extends Screen {
     private static final int PANEL_WIDTH = 120;
@@ -136,12 +137,45 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
-        // If modal open, drag sliders first
+        // If modal open, drag picker or slider
         if (isSettingsOpen()) {
             if (colorPicker != null && colorPicker.mouseDragged(mouseX, mouseY, button, dx, dy)) return true;
-            return true;
+
+            // Slider dragging (works only if a slider started drag via handleSettingsClick/rowSlider)
+            if (draggingSliderKey != null) {
+                SettingsLayout l = beginSettingsLayout();
+
+                for (HudWidget.HudSetting s : settingsWidget.getSettings()) {
+                    // consume rows in the exact same order
+                    if (s.type() == HudWidget.HudSetting.Type.TOGGLE) {
+                        nextRowY(l);
+                    } else if (s.type() == HudWidget.HudSetting.Type.COLOR) {
+                        nextRowY(l);
+                    } else if (s.type() == HudWidget.HudSetting.Type.SLIDER) {
+                        int rowY = nextRowY(l);
+
+                        if (!s.key().equals(draggingSliderKey)) continue;
+
+                        int barX = l.btnX - 70;
+                        int barW = 120;
+
+                        float t = (float)((mouseX - barX) / (double)barW);
+                        t = Math.max(0f, Math.min(1f, t));
+                        float raw = s.min() + t * (s.max() - s.min());
+                        float snapped = (s.step() > 0f) ? (Math.round(raw / s.step()) * s.step()) : raw;
+                        snapped = Math.max(s.min(), Math.min(s.max(), snapped));
+
+                        WidgetConfigManager.setFloat(settingsWidget.getName(), s.key(), snapped, true);
+                        return true;
+                    }
+                }
+            }
+
+            // IMPORTANT: don't swallow the event, or nothing else will work
+            return false;
         }
 
+        // normal canvas dragging
         if (dragging != null) {
             dragging.x += dx;
             dragging.y += dy;
@@ -151,44 +185,17 @@ public class HudEditorScreen extends Screen {
             return true;
         }
 
-        if (isSettingsOpen() && draggingSliderKey != null) {
-            // We re-run layout and find the slider row again by key
-            SettingsLayout l = beginSettingsLayout();
-
-            for (HudWidget.HudSetting s : settingsWidget.getSettings()) {
-                // Compute rowY by consuming rows in the same order
-                if (s.type() == HudWidget.HudSetting.Type.TOGGLE) {
-                    nextRowY(l);
-                } else if (s.type() == HudWidget.HudSetting.Type.COLOR) {
-                    nextRowY(l);
-                } else if (s.type() == HudWidget.HudSetting.Type.SLIDER) {
-                    int rowY = nextRowY(l);
-
-                    if (!s.key().equals(draggingSliderKey)) continue;
-
-                    int barX = l.btnX - 70;
-                    int barW = 120;
-
-                    float t = (float)((mouseX - barX) / (double)barW);
-                    t = Math.max(0f, Math.min(1f, t));
-                    float raw = s.min() + t * (s.max() - s.min());
-                    float snapped = (s.step() > 0f) ? (Math.round(raw / s.step()) * s.step()) : raw;
-                    snapped = Math.max(s.min(), Math.min(s.max(), snapped));
-
-                    // Save as float setting
-                    WidgetConfigManager.setFloat(settingsWidget.getName(), s.key(), snapped, true);
-                    return true;
-                }
-            }
-        }
-
         return super.mouseDragged(mouseX, mouseY, button, dx, dy);
     }
+
 
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (isSettingsOpen()) {
+            // stop slider dragging
+            draggingSliderKey = null;
+
             if (colorPicker != null && colorPicker.mouseReleased(mouseX, mouseY, button)) {
                 WidgetConfigManager.updateWidget(settingsWidget);
                 return true;
@@ -202,13 +209,9 @@ public class HudEditorScreen extends Screen {
             return true;
         }
 
-        if (isSettingsOpen()) {
-            draggingSliderKey = null;
-        }
-
-
         return super.mouseReleased(mouseX, mouseY, button);
     }
+
 
     private static boolean inside(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
@@ -223,16 +226,27 @@ public class HudEditorScreen extends Screen {
         }
 
         colorPicker = switch (target) {
+            case NONE -> null;
             case BG -> new ColorPicker(px, py, pw,
                     () -> settingsWidget.style.backgroundColor,
-                    c -> settingsWidget.style.backgroundColor = c);
+                    c -> {
+                        settingsWidget.style.backgroundColor = c;
+                        WidgetConfigManager.setInt(settingsWidget.getName(), "backgroundColor", c, true);
+                    });
+
             case BORDER -> new ColorPicker(px, py, pw,
                     () -> settingsWidget.style.borderColor,
-                    c -> settingsWidget.style.borderColor = c);
+                    c -> {
+                        settingsWidget.style.borderColor = c;
+                        WidgetConfigManager.setInt(settingsWidget.getName(), "borderColor", c, true);
+                    });
+
             case TEXT -> new ColorPicker(px, py, pw,
                     () -> settingsWidget.style.textColor,
-                    c -> settingsWidget.style.textColor = c);
-            default -> null;
+                    c -> {
+                        settingsWidget.style.textColor = c;
+                        WidgetConfigManager.setInt(settingsWidget.getName(), "textColor", c, true);
+                    });
         };
     }
 
@@ -255,27 +269,58 @@ public class HudEditorScreen extends Screen {
 
         SettingsLayout l = beginSettingsLayout();
 
-        if (rowToggle(null, l, mouseX, mouseY, "Background", settingsWidget.style.drawBackground, () -> {
-            settingsWidget.style.drawBackground = !settingsWidget.style.drawBackground;
-            WidgetConfigManager.updateWidget(settingsWidget);
-            if (!settingsWidget.style.drawBackground && openPicker == PickerTarget.BG) {
-                openPicker(PickerTarget.NONE, 0, 0, 0, 0);
+        for (HudWidget.HudSetting s : settingsWidget.getSettings()) {
+            switch (s.type()) {
+                case TOGGLE -> {
+                    boolean val = WidgetConfigManager.getBool(settingsWidget.getName(), s.key(), false);
+
+                    if (rowToggle(null, l, mouseX, mouseY, s.label(), val, () -> {
+                        boolean newVal = !WidgetConfigManager.getBool(settingsWidget.getName(), s.key(), false);
+                        WidgetConfigManager.setBool(settingsWidget.getName(), s.key(), newVal, true);
+
+                        // Keep WidgetStyle in sync if this toggle is a style toggle
+                        if (s.key().equals("drawBackground")) settingsWidget.style.drawBackground = newVal;
+                        if (s.key().equals("drawBorder")) settingsWidget.style.drawBorder = newVal;
+
+                        // Close picker if we turned off the feature it belongs to
+                        if (!newVal && s.key().equals("drawBackground") && openPicker == PickerTarget.BG) {
+                            openPicker(PickerTarget.NONE, 0, 0, 0, 0);
+                        }
+                        if (!newVal && s.key().equals("drawBorder") && openPicker == PickerTarget.BORDER) {
+                            openPicker(PickerTarget.NONE, 0, 0, 0, 0);
+                        }
+
+                        WidgetConfigManager.updateWidget(settingsWidget);
+                    })) return true;
+                }
+
+                case COLOR -> {
+                    int argb = WidgetConfigManager.getInt(settingsWidget.getName(), s.key(), 0xFFFFFFFF);
+
+                    boolean enabled = true;
+                    if (s.key().equals("backgroundColor")) enabled = settingsWidget.style.drawBackground;
+                    if (s.key().equals("borderColor")) enabled = settingsWidget.style.drawBorder;
+
+                    // IMPORTANT: your current code uses "bgColor" but your config keys are "backgroundColor"
+                    PickerTarget target =
+                            s.key().equals("backgroundColor") ? PickerTarget.BG :
+                                    s.key().equals("borderColor") ? PickerTarget.BORDER :
+                                            PickerTarget.TEXT;
+
+                    if (rowColorPicker(null, l, mouseX, mouseY, s.label(), enabled, argb, target)) return true;
+                }
+
+                case SLIDER -> {
+                    float val = WidgetConfigManager.getFloat(settingsWidget.getName(), s.key(), s.min());
+
+                    if (rowSlider(null, l, mouseX, mouseY, s.label(),
+                            val, s.min(), s.max(), s.step(),
+                            s.key(),
+                            newVal -> WidgetConfigManager.setFloat(settingsWidget.getName(), s.key(), newVal, true)
+                    )) return true;
+                }
             }
-        })) return true;
-
-        if (rowColorPicker(null, l, mouseX, mouseY, "BG Color", settingsWidget.style.drawBackground, settingsWidget.style.backgroundColor, PickerTarget.BG)) return true;
-
-        if (rowToggle(null, l, mouseX, mouseY, "Border", settingsWidget.style.drawBorder, () -> {
-            settingsWidget.style.drawBorder = !settingsWidget.style.drawBorder;
-            WidgetConfigManager.updateWidget(settingsWidget);
-            if (!settingsWidget.style.drawBorder && openPicker == PickerTarget.BORDER) {
-                openPicker(PickerTarget.NONE, 0, 0, 0, 0);
-            }
-        })) return true;
-
-        if (rowColorPicker(null, l, mouseX, mouseY, "Border Color", settingsWidget.style.drawBorder, settingsWidget.style.borderColor, PickerTarget.BORDER)) return true;
-
-        if (rowColorPicker(null, l, mouseX, mouseY, "Text Color", true, settingsWidget.style.textColor, PickerTarget.TEXT)) return true;
+        }
 
         return true;
     }
@@ -393,30 +438,46 @@ public class HudEditorScreen extends Screen {
         for (HudWidget.HudSetting s : settingsWidget.getSettings()) {
             switch (s.type()) {
                 case TOGGLE -> {
-                    boolean val = WidgetConfigManager.getBool(settingsWidget.getName(), s.key(), false);
-
-                    // Special-case: map legacy style toggles to current fields if you want
-                    // or just store everything in config only.
+                    boolean val = switch (s.key()) {
+                        case "drawBackground" -> settingsWidget.style.drawBackground;
+                        case "drawBorder" -> settingsWidget.style.drawBorder;
+                        default -> false; // (or read from config if you add it)
+                    };
                     rowToggle(ctx, l, mouseX, mouseY, s.label(), val, () -> {});
                 }
+
                 case COLOR -> {
-                    int argb = WidgetConfigManager.getInt(settingsWidget.getName(), s.key(), 0xFFFFFFFF);
-                    // You can map keys to PickerTarget, or add a new PickerTarget for arbitrary keys later
-                    // For now, keep only these 3 supported:
+                    int argb = switch (s.key()) {
+                        case "backgroundColor" -> settingsWidget.style.backgroundColor;
+                        case "borderColor" -> settingsWidget.style.borderColor;
+                        case "textColor" -> settingsWidget.style.textColor;
+                        default -> 0xFFFFFFFF;
+                    };
+
+                    boolean enabled = true;
+                    if (s.key().equals("backgroundColor")) enabled = settingsWidget.style.drawBackground;
+                    if (s.key().equals("borderColor")) enabled = settingsWidget.style.drawBorder;
+
                     PickerTarget target =
-                            s.key().equals("bgColor") ? PickerTarget.BG :
+                            s.key().equals("backgroundColor") ? PickerTarget.BG :
                                     s.key().equals("borderColor") ? PickerTarget.BORDER :
                                             PickerTarget.TEXT;
 
-                    rowColorPicker(ctx, l, mouseX, mouseY, s.label(), true, argb, target);
+                    rowColorPicker(ctx, l, mouseX, mouseY, s.label(), enabled, argb, target);
                 }
+
                 case SLIDER -> {
                     float val = WidgetConfigManager.getFloat(settingsWidget.getName(), s.key(), s.min());
-                    rowSlider(ctx, l, mouseX, mouseY, s.label(), val, s.min(), s.max(), s.step(),
+                    rowSlider(
+                            ctx, l,
+                            mouseX, mouseY,
+                            s.label(),
+                            val, s.min(), s.max(), s.step(),
                             s.key(),
                             newVal -> WidgetConfigManager.setFloat(settingsWidget.getName(), s.key(), newVal, true)
                     );
                 }
+
             }
         }
 
@@ -575,7 +636,7 @@ public class HudEditorScreen extends Screen {
                               String label,
                               float value, float min, float max, float step,
                               String sliderKey,
-                              java.util.function.Consumer<Float> onChange) {
+                              Consumer<Float> onChange) {
         int rowY = nextRowY(l);
 
         int barX = l.btnX - 70;     // slider bar left (tweak if you want)
@@ -599,7 +660,7 @@ public class HudEditorScreen extends Screen {
 
             // value text
             String v = String.format("%.2f", value);
-            ctx.drawText(textRenderer, v, barX + barW + 6, rowY, 0xAAAAAA, false);
+            ctx.drawText(textRenderer, v, barX + (barW/2) - (textRenderer.getWidth(v)/2), rowY + 1, 0xAAAAAA, false);
         }
 
         // click/drag start

@@ -1,5 +1,6 @@
 package legends.ultra.cool.addons.mixin.client;
 
+import legends.ultra.cool.addons.data.WidgetConfigManager;
 import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
 import legends.ultra.cool.addons.util.EntityDebug;
 import legends.ultra.cool.addons.util.TextHeathbar;
@@ -26,7 +27,8 @@ public abstract class EntityRendererDisplayNameMixin<T extends Entity, S extends
         if (entity instanceof net.minecraft.entity.player.PlayerEntity) return;
         if (entity instanceof net.minecraft.entity.decoration.ArmorStandEntity) return;
 
-        if (state.squaredDistanceToCamera >= 2048.0) return;
+        float range = WidgetConfigManager.getFloat("Nameplates","range",50f);
+        if (state.squaredDistanceToCamera >= Math.pow(range,2)) return;
 
 
         EntityRenderStateAccessor acc = (EntityRenderStateAccessor) (Object) state;

@@ -1,5 +1,7 @@
 package legends.ultra.cool.addons.mixin.client;
 
+import legends.ultra.cool.addons.data.WidgetConfigManager;
+import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -24,6 +26,10 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
     @Inject(method = "renderLabelIfPresent", at = @At("HEAD"), cancellable = true)
     private void legends$renderMultiline(S state, Text text, MatrixStack matrices, VertexConsumerProvider consumers, int light, CallbackInfo ci) {
         Vec3d pos = state.nameLabelPos;
+
+        float yOffset = WidgetConfigManager.getFloat("Nameplates", "yOffset", 1f);
+        float scale = WidgetConfigManager.getFloat("Nameplates", "scale", 1.0f);
+
         if (pos == null) return;
 
         String raw = text.getString();
@@ -37,17 +43,14 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
         MinecraftClient client = MinecraftClient.getInstance();
         TextRenderer tr = client.textRenderer;
 
-        boolean seeThrough = !state.sneaking;
-        int bg = ((int)(client.options.getTextBackgroundOpacity(0.25f) * 255.0f) << 24);
-
         matrices.push();
-        matrices.translate(pos.x, pos.y + 1f, pos.z);
+        matrices.translate(pos.x, pos.y + yOffset, pos.z);
         matrices.multiply(client.getEntityRenderDispatcher().getRotation());
-        matrices.scale(0.025f, -0.025f, 0.025f);
+        matrices.scale(0.025f * scale, -0.025f * scale, 0.025f * scale);
 
         Matrix4f mat = matrices.peek().getPositionMatrix();
         int lineH = tr.fontHeight + 1;
-        float startY = (-(lines.length - 1) * lineH * 0.5f) - 1f;
+        float startY = (-(lines.length - 1) * lineH * 0.5f) - yOffset;
 
         // Compute block dimensions (in nameplate pixel space)
         int maxW = 0;

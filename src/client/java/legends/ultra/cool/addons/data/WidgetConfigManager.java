@@ -212,13 +212,13 @@ public class WidgetConfigManager {
         return def;
     }
 
-    private static void setBool(String widgetId, String key, boolean value, boolean autosave) {
+    public static void setBool(String widgetId, String key, boolean value, boolean autosave) {
         WidgetData d = dataFor(widgetId);
         d.settings.put(key, new JsonPrimitive(value));
         if (autosave) save();
     }
 
-    private static void setInt(String widgetId, String key, int value, boolean autosave) {
+    public static void setInt(String widgetId, String key, int value, boolean autosave) {
         WidgetData d = dataFor(widgetId);
         d.settings.put(key, new JsonPrimitive(value));
         if (autosave) save();
