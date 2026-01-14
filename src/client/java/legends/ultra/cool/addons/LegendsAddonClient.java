@@ -6,7 +6,7 @@ import legends.ultra.cool.addons.events.WorldJoinLeaveHandler;
 import legends.ultra.cool.addons.hud.HudManager;
 import legends.ultra.cool.addons.hud.HudRenderer;
 import legends.ultra.cool.addons.hud.HudWidget;
-import legends.ultra.cool.addons.hud.otherTypes.NameplateWidget;
+import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
 import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.TextWidget;
 import legends.ultra.cool.addons.input.Keybinds;

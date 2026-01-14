@@ -1,6 +1,6 @@
 package legends.ultra.cool.addons.mixin.client;
 
-import legends.ultra.cool.addons.hud.otherTypes.NameplateWidget;
+import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
 import legends.ultra.cool.addons.util.EntityDebug;
 import legends.ultra.cool.addons.util.TextHeathbar;
 import net.minecraft.client.render.entity.EntityRenderer;
@@ -22,7 +22,7 @@ public abstract class EntityRendererDisplayNameMixin<T extends Entity, S extends
     private void legends$forceAndOverrideDisplayName(T entity, S state, float tickDelta, CallbackInfo ci) {
         if (!NameplateWidget.isEnabledGlobal()) return;
         if (!(entity instanceof LivingEntity living)) return;
-        if (!living.isAlive() || living.isRemoved()) return;
+        if (!living.isAlive() ) return;
         if (entity instanceof net.minecraft.entity.player.PlayerEntity) return;
         if (entity instanceof net.minecraft.entity.decoration.ArmorStandEntity) return;
 

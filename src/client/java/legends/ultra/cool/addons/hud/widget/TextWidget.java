@@ -4,6 +4,8 @@ import legends.ultra.cool.addons.hud.HudWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
+import java.util.List;
+
 public class TextWidget extends HudWidget {
     private final String text;
 
@@ -60,4 +62,16 @@ public class TextWidget extends HudWidget {
     public int getHeight() {
         return MinecraftClient.getInstance().textRenderer.fontHeight;
     }
+
+    @Override
+    public List<HudSetting> getSettings() {
+        return List.of(
+                HudSetting.toggle("bgToggle", "Background"),
+                HudSetting.color("bgColor", "BG Color"),
+                HudSetting.toggle("brdToggle", "Background"),
+                HudSetting.color("brdColor", "Border Color"),
+                HudSetting.color("txtColor", "Text Color")
+        );
+    }
+
 }

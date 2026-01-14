@@ -1,7 +1,9 @@
-package legends.ultra.cool.addons.hud.otherTypes;
+package legends.ultra.cool.addons.hud.widget.otherTypes;
 
 import legends.ultra.cool.addons.hud.HudWidget;
 import net.minecraft.client.gui.DrawContext;
+
+import java.util.List;
 
 public class NameplateWidget extends HudWidget {
 
@@ -35,6 +37,14 @@ public class NameplateWidget extends HudWidget {
     @Override
     public boolean hasSettings() {
         return false; // disables the settings modal for this widget
+    }
+
+    @Override
+    public List<HudSetting> getSettings() {
+        return List.of(
+                HudSetting.slider("yOffset", "Height",0f,2f,0.25f),
+                HudSetting.slider("scale", "Scale",0.1f, 2f, 0.25f)
+        );
     }
 }
 

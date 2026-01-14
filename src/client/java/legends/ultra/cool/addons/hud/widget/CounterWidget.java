@@ -4,6 +4,8 @@ import legends.ultra.cool.addons.hud.HudWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
+import java.util.List;
+
 public class CounterWidget extends HudWidget {
 
     private int ticksElapsed = 0;
@@ -82,6 +84,17 @@ public class CounterWidget extends HudWidget {
         return MinecraftClient.getInstance()
                 .textRenderer
                 .fontHeight;
+    }
+
+    @Override
+    public List<HudSetting> getSettings() {
+        return List.of(
+                HudSetting.toggle("bgToggle", "Background"),
+                HudSetting.color("bgColor", "BG Color"),
+                HudSetting.toggle("brdToggle", "Background"),
+                HudSetting.color("brdColor", "Border Color"),
+                HudSetting.color("txtColor", "Text Color")
+        );
     }
 }
 
