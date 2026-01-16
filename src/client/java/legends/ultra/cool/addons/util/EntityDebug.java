@@ -2,12 +2,16 @@ package legends.ultra.cool.addons.util;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
+import net.minecraft.util.DyeColor;
 
 public class EntityDebug {
 
@@ -19,13 +23,21 @@ public class EntityDebug {
             return;
         }
 
+        int argb = 0;
+        for (ItemStack armor : e.getArmorItems()) {
+            if (armor.isEmpty()) continue;
+
+            argb = getArmorColorARGB(armor);
+            // use argb
+        }
+
         String mobName =  mob.getDisplayName().getString();
         double[] mobStats = getMobStats(mob);
         double maxHp = mobStats[1];
         double itemDef = mobStats[2];
         double itemDmg = mobStats[3];
 
-        client.player.sendMessage(Text.literal("\nMob: " + mobName + "\nMaxHP: " + maxHp + "\ndef: " + itemDef + "\ndmg: " + itemDmg),false);
+        client.player.sendMessage(Text.literal("\nMob: " + mobName + "\nMaxHP: " + maxHp + "\ndef: " + itemDef + "\ndmg: " + itemDmg + "\n armor color: " + toHexARGB(argb)),false);
     }
 
     public static double[] getMobStats(LivingEntity e) {
@@ -54,6 +66,21 @@ public class EntityDebug {
 
         NbtCompound nbt = custom.copyNbt(); // copies the NBT payload :contentReference[oaicite:2]{index=2}
         return nbt.contains(key) ? nbt.getInt(key) : 0;
+    }
+
+    public static int getArmorColorARGB(ItemStack stack) {
+        DyedColorComponent dyed = stack.get(DataComponentTypes.DYED_COLOR);
+
+        if (dyed == null) {
+            return 0xFFFFFFFF; // no dye → white
+        }
+
+        int rgb = dyed.rgb(); // 0xRRGGBB
+        return 0xFF000000 | rgb; // ARGB
+    }
+
+    public static String toHexARGB(int argb) {
+        return String.format("%08X", argb);
     }
 }
 

@@ -1,7 +1,8 @@
 package legends.ultra.cool.addons.mixin.client;
 
 import legends.ultra.cool.addons.data.WidgetConfigManager;
-import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
+import legends.ultra.cool.addons.util.ColorUtil;
+import legends.ultra.cool.addons.util.EntityDebug;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -11,6 +12,9 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -25,6 +29,7 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
 
     @Inject(method = "renderLabelIfPresent", at = @At("HEAD"), cancellable = true)
     private void legends$renderMultiline(S state, Text text, MatrixStack matrices, VertexConsumerProvider consumers, int light, CallbackInfo ci) {
+
         Vec3d pos = state.nameLabelPos;
 
         float yOffset = WidgetConfigManager.getFloat("Nameplates", "yOffset", 1f);
@@ -41,6 +46,7 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
         ci.cancel();
 
         MinecraftClient client = MinecraftClient.getInstance();
+
         TextRenderer tr = client.textRenderer;
 
         matrices.push();
@@ -64,7 +70,35 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
         float panelH = totalH + padY * 2f;
 
         float panelX = -panelW / 2f;
-        float panelY = -padY - (panelH/3);
+        float panelY = -padY - (panelH / 3);
+
+        int argb = 0xFF520016;
+
+//        for (ItemStack armor : mob.getArmorItems()) {
+//            if (armor.isEmpty()) continue;
+//
+//            int c = EntityDebug.getArmorColorARGB(armor);
+//            if (c != 0xFFff0044) { // found dyed leather
+//                argb = c;
+//                break;
+//            }
+//        }
+
+        argb = ColorUtil.forceValueToMax(argb);
+
+        float r = ((argb >> 16) & 0xFF) / 255f;
+        float g = ((argb >> 8) & 0xFF) / 255f;
+        float b = (argb & 0xFF) / 255f;
+        float a = ((argb >>> 24) & 0xFF) / 255f;
+
+//        float r = 82f;
+//        float g = 0f;
+//        float b = 22;
+//        float a = 1f;
+
+        int lit = LightmapTextureManager.applyEmission(light, 2);
+// always bright: LightmapTextureManager.MAX_LIGHT_COORDINATE
+
 
         drawNineSlice(
                 consumers,
@@ -73,8 +107,9 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
                 panelY,
                 panelW,
                 panelH,
-                9, 9,   // texW, texH: match your PNG size
-                4         // corner size in pixels
+                9, 9, 4,
+                r, g, b, a,
+                lit
         );
 
         for (int i = 0; i < lines.length; i++) {
@@ -98,20 +133,21 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
     }
 
     private static final Identifier NAMEPLATE_BORDER =
-            Identifier.of("legends-addon", "texture/gui/nameplate_border.png");
+            Identifier.of("legends-addon", "textures/gui/nameplate_border_grayscaled.png");
 
     // Draw a textured quad in nameplate-pixel space
     private static void drawQuad(
             VertexConsumer vc,
             Matrix4f mat,
             float x1, float y1, float x2, float y2,
-            float u1, float v1, float u2, float v2
+            float u1, float v1, float u2, float v2,
+            float r, float g, float b, float a,
+            int light
     ) {
-        // z=0 is fine for nameplate space; if you get z-fighting, use a tiny z like -0.01f
-        vc.vertex(mat, x1, y2, -0.01f).texture(u1, v2).color(1f, 1f, 1f, 1f);
-        vc.vertex(mat, x2, y2, -0.01f).texture(u2, v2).color(1f, 1f, 1f, 1f);
-        vc.vertex(mat, x2, y1, -0.01f).texture(u2, v1).color(1f, 1f, 1f, 1f);
-        vc.vertex(mat, x1, y1, -0.01f).texture(u1, v1).color(1f, 1f, 1f, 1f);
+        vc.vertex(mat, x1, y2, -0.01f).texture(u1, v2).color(r, g, b, a).light(light);
+        vc.vertex(mat, x2, y2, -0.01f).texture(u2, v2).color(r, g, b, a).light(light);
+        vc.vertex(mat, x2, y1, -0.01f).texture(u2, v1).color(r, g, b, a).light(light);
+        vc.vertex(mat, x1, y1, -0.01f).texture(u1, v1).color(r, g, b, a).light(light);
     }
 
     private static void drawNineSlice(
@@ -120,7 +156,9 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
             float x, float y,
             float w, float h,
             int texW, int texH,
-            int corner
+            int corner,
+            float r, float g, float b, float a,
+            int light
     ) {
         // Source texture coords (pixels -> UV)
         float cU = corner / (float) texW;
@@ -139,25 +177,30 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
         float y3 = y + h;
 
         // Guard against tiny panels
-        if (w < corner * 2f) { x2 = x1; }
-        if (h < corner * 2f) { y2 = y1; }
+        if (w < corner * 2f) {
+            x2 = x1;
+        }
+        if (h < corner * 2f) {
+            y2 = y1;
+        }
 
         VertexConsumer vc = consumers.getBuffer(RenderLayer.getGuiTextured(NAMEPLATE_BORDER)); // common way to draw GUI textures :contentReference[oaicite:0]{index=0}
 
         // 4 corners
-        drawQuad(vc, mat, x0, y0, x1, y1, 0f, 0f, cU, cV);                 // TL
-        drawQuad(vc, mat, x2, y0, x3, y1, uMax - cU, 0f, uMax, cV);        // TR
-        drawQuad(vc, mat, x0, y2, x1, y3, 0f, vMax - cV, cU, vMax);        // BL
-        drawQuad(vc, mat, x2, y2, x3, y3, uMax - cU, vMax - cV, uMax, vMax); // BR
+        drawQuad(vc, mat, x0, y0, x1, y1, 0f, 0f, cU, cV, r, g, b, a, light);                 // TL
+        drawQuad(vc, mat, x2, y0, x3, y1, uMax - cU, 0f, uMax, cV, r, g, b, a, light);        // TR
+        drawQuad(vc, mat, x0, y2, x1, y3, 0f, vMax - cV, cU, vMax, r, g, b, a, light);        // BL
+        drawQuad(vc, mat, x2, y2, x3, y3, uMax - cU, vMax - cV, uMax, vMax, r, g, b, a, light); // BR
 
         // Edges (stretch)
-        drawQuad(vc, mat, x1, y0, x2, y1, cU, 0f, uMax - cU, cV);          // Top
-        drawQuad(vc, mat, x1, y2, x2, y3, cU, vMax - cV, uMax - cU, vMax); // Bottom
-        drawQuad(vc, mat, x0, y1, x1, y2, 0f, cV, cU, vMax - cV);          // Left
-        drawQuad(vc, mat, x2, y1, x3, y2, uMax - cU, cV, uMax, vMax - cV); // Right
+        drawQuad(vc, mat, x1, y0, x2, y1, cU, 0f, uMax - cU, cV, r, g, b, a, light);          // Top
+        drawQuad(vc, mat, x1, y2, x2, y3, cU, vMax - cV, uMax - cU, vMax, r, g, b, a, light); // Bottom
+        drawQuad(vc, mat, x0, y1, x1, y2, 0f, cV, cU, vMax - cV, r, g, b, a, light);          // Left
+        drawQuad(vc, mat, x2, y1, x3, y2, uMax - cU, cV, uMax, vMax - cV, r, g, b, a, light); // Right
 
         // Center (fill)
-        drawQuad(vc, mat, x1, y1, x2, y2, cU, cV, uMax - cU, vMax - cV);
+        drawQuad(vc, mat, x1, y1, x2, y2, cU, cV, uMax - cU, vMax - cV, r, g, b, a, light);
     }
+
 
 }

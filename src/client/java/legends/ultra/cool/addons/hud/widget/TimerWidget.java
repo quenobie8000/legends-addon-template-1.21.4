@@ -1,27 +1,42 @@
 package legends.ultra.cool.addons.hud.widget;
 
 import legends.ultra.cool.addons.hud.HudWidget;
+import legends.ultra.cool.addons.util.ChatLookup;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
-public class CounterWidget extends HudWidget {
-
+public class TimerWidget extends HudWidget{
     private int ticksElapsed = 0;
-    private int value = 0;
-    private int ticksPerIncrement = 20; // 1 second
+    private double value = 0;
+    private int ticksPerIncrement = 1; // 1 second
+    private boolean start = false;
 
-    public CounterWidget(int x, int y) {
-        super("Counter", x, y);
+    public TimerWidget(int x, int y) {
+        super("Timer", x, y);
     }
 
     // Called from ClientTickHandler
-    public void tick() {
+    public void tick(boolean startCondition, boolean stopCondition) {
+
+        if (stopCondition) {
+            start = false;
+            ticksElapsed = 0; // optional, but usually correct
+            return;
+        }
+
+        if (startCondition) {
+            start = true;
+        }
+
+        if (!start) return;
+
         ticksElapsed++;
 
         if (ticksElapsed >= ticksPerIncrement) {
-            value++;
+            value += 0.05;
             ticksElapsed = 0;
         }
     }
@@ -29,13 +44,24 @@ public class CounterWidget extends HudWidget {
     public void reset() {
         ticksElapsed = 0;
         value = 0;
+        start = false;
+    }
+
+    public static int DungeonResultColor(String result) {
+        int argb = 0xFFFFFFFF;
+
+        if (ChatLookup.getResult().equalsIgnoreCase("completed")) argb = 0xFF23b000;
+        if (ChatLookup.getResult().equalsIgnoreCase("failed")) argb = 0xFFb10000;
+
+        return argb;
     }
 
     @Override
     public void render(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
+        DecimalFormat format = new DecimalFormat("0.00");
 
-        String text = "Time: " + value;
+        String text = "Stopwatch: " +  String.format("%.2f", value);
 
         int width = client.textRenderer.getWidth(text);
         int height = client.textRenderer.fontHeight;
@@ -67,7 +93,7 @@ public class CounterWidget extends HudWidget {
                 text,
                 (int) x,
                 (int) y,
-                style.textColor,
+                (ChatLookup.getResult().isEmpty()) ? style.textColor : DungeonResultColor(ChatLookup.getResult()),
                 false
         );
     }
@@ -76,7 +102,7 @@ public class CounterWidget extends HudWidget {
     public int getWidth() {
         return MinecraftClient.getInstance()
                 .textRenderer
-                .getWidth("Time: " + value);
+                .getWidth("Stopwatch: " + String.format("%.2f", value));
     }
 
     @Override
@@ -87,7 +113,7 @@ public class CounterWidget extends HudWidget {
     }
 
     @Override
-    public List<HudSetting> getSettings() {
+    public List<HudWidget.HudSetting> getSettings() {
         return List.of(
                 HudSetting.toggle("drawBackground", "Background"),
                 HudSetting.color("backgroundColor", "BG Color"),
@@ -97,4 +123,3 @@ public class CounterWidget extends HudWidget {
         );
     }
 }
-

@@ -24,8 +24,8 @@ public class TextWidget extends HudWidget {
         // background
         if (style.drawBackground) {
             context.fill(
-                    (int) (x - 2),
-                    (int) (y - 2),
+                    (int) (x - 3),
+                    (int) (y - 3),
                     (int) (x + width + 2),
                     (int) (y + height + 2),
                     style.backgroundColor
@@ -35,10 +35,10 @@ public class TextWidget extends HudWidget {
         // border
         if (style.drawBorder) {
             context.drawBorder(
-                    (int) (x - 2),
-                    (int) (y - 2),
-                    getWidth() + 4,
-                    getHeight() + 4,
+                    (int) (x - 3),
+                    (int) (y - 3),
+                    width + 5,
+                    height + 5,
                     style.borderColor
             );
         }
