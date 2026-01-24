@@ -69,7 +69,7 @@ public class NameplateWidget extends HudWidget {
                 HudSetting.color(
                         "bgColor", "Nameplate Color",
                         () -> true,
-                        () -> WidgetConfigManager.getInt(w, "bgColor", 0xFF520016),
+                        () -> WidgetConfigManager.getInt(w, "bgColor", 0xFFFF0016),
                         c -> WidgetConfigManager.setInt(w, "bgColor", c, true)
                 )
         );

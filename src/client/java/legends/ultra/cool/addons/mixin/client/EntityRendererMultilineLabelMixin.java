@@ -52,7 +52,7 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
         // This is the configurable tint color (now reading from SAME category)
         int argb = WidgetConfigManager.getInt(CFG, "bgColor", 0xFF520016);
 
-        argb = ColorUtil.forceValueToMax(argb);
+        //argb = ColorUtil.forceValueToMax(argb);
 
         float a = ((argb >>> 24) & 0xFF) / 255f;
         float r = ((argb >>> 16) & 0xFF) / 255f;
