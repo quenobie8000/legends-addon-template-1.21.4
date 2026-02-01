@@ -11,6 +11,7 @@ import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
 import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.TextWidget;
 import legends.ultra.cool.addons.input.Keybinds;
+import legends.ultra.cool.addons.overlay.ContainerOverlay;
 import legends.ultra.cool.addons.util.ChatLookup;
 import net.fabricmc.api.ClientModInitializer;
 
@@ -31,6 +32,7 @@ public class LegendsAddonClient implements ClientModInitializer {
         Keybinds.init();
         WorldJoinLeaveHandler.init();
         ClientTickHandler.init();
+        ContainerOverlay.init();
 
         TextWidget textWidget = new TextWidget(10, 10);
         CounterWidget counterWidget = new CounterWidget(10, 30);

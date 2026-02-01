@@ -30,6 +30,10 @@ public class CounterWidget extends HudWidget {
         value = 0;
     }
 
+    public int getValue() {
+        return value;
+    }
+
     @Override
     public void render(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();

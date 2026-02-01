@@ -4,6 +4,7 @@ import legends.ultra.cool.addons.hud.HudEditorScreen;
 import legends.ultra.cool.addons.hud.HudManager;
 import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.TimerWidget;
+import legends.ultra.cool.addons.overlay.ContainerOverlay;
 import legends.ultra.cool.addons.util.EntityDebug;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -49,6 +50,13 @@ public class Keybinds {
                         "Legends Addon"
                 ));
 
+        KeyBinding INV_DEBUG = KeyBindingHelper.registerKeyBinding(
+                new KeyBinding(
+                        "inv debug",
+                        GLFW.GLFW_KEY_P,
+                        "Legends Addon debug"
+                ));
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             //OPEN EDITOR
@@ -73,6 +81,11 @@ public class Keybinds {
                     }
                 }
             });
+
+            //INV DEBUG
+            while (INV_DEBUG.wasPressed()) {
+                ContainerOverlay.init();
+            }
 
         });
     }

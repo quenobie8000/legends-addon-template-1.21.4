@@ -3,9 +3,10 @@
   "package": "legends.ultra.cool.addons.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "EntityRenderStateAccessor",
     "EntityRendererDisplayNameMixin",
-    "EntityRendererMultilineLabelMixin"
+    "EntityRendererMultilineLabelMixin",
+    "EntityRenderStateAccessor",
+    "HandledScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
