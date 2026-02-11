@@ -4,12 +4,14 @@ import legends.ultra.cool.addons.hud.HudManager;
 import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.TimerWidget;
 import legends.ultra.cool.addons.overlay.ContainerOverlay;
-import legends.ultra.cool.addons.util.ContainerScan;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
 
 public class ClientTickHandler {
     private static boolean initialized = false;
+
+    private static boolean wasOpen = false;
 
     public static void init() {
         if (initialized) return;
@@ -25,15 +27,9 @@ public class ClientTickHandler {
                     timer.tick(timer.getToggleState());
                 }
 
-                if (ContainerScan.containerHasName("dirt5"))
-                    ContainerOverlay.setTexture("textures/gui/t5_inv.png");
-                else if (ContainerScan.containerHasName("dirt4"))
-                    ContainerOverlay.setTexture("textures/gui/t4_inv.png");
-                else if (ContainerScan.containerHasName("dirt3"))
-                    ContainerOverlay.setTexture("textures/gui/t3_inv.png");
-                else if (ContainerScan.containerHasName("dirt2"))
-                    ContainerOverlay.setTexture("textures/gui/t2_inv.png");
-                else ContainerOverlay.setTexture("textures/gui/t1_inv.png");
+                if ((client.currentScreen instanceof HandledScreen<?> )) ContainerOverlay.fTreeCheck();
+
+
             });
         });
     }

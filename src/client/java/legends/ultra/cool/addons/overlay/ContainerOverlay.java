@@ -15,6 +15,7 @@ import net.minecraft.util.Identifier;
 import java.util.function.Function;
 
 public final class ContainerOverlay {
+
     private ContainerOverlay() {
     }
 
@@ -45,18 +46,20 @@ public final class ContainerOverlay {
      * Decide which container(s) get the overlay
      */
     private static boolean shouldOverlay(HandledScreen<?> hs) {
-        // Example filters you can combine:
-
-        // 1) By title text (simple & common)
-        String title = hs.getTitle().getString();
-        if (!title.toLowerCase().contains("foraging tree")) return false;
-
-        // 2) By slot count (optional)
-        ScreenHandler handler = hs.getScreenHandler();
-        int slots = handler.slots.size();
-        // if (slots != 54) return false;
-
+        if (!isThatTitle) return false;
         return true;
+    }
+
+    static boolean isThatTitle = false;
+    public static Boolean isThatTitle(String thatTitle) {
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            ScreenEvents.afterRender(screen).register((scr, ctx, mouseX, mouseY, delta) -> {
+                if (!(scr instanceof HandledScreen<?> hs)) return;
+
+                isThatTitle = hs.getTitle().getString().toLowerCase().contains(thatTitle);
+            });
+        });
+        return isThatTitle;
     }
 
     public final class RenderLayers {
@@ -87,6 +90,20 @@ public final class ContainerOverlay {
 
             // This draws the whole texture stretched to w/h.
             ctx.drawTexture(RenderLayers.GUI, texture, x, y, 0, 0, w, h, w, h);
+        }
+    }
+
+    public static void fTreeCheck() {
+        if (isThatTitle("foraging tree")) {
+            if (ContainerScan.containerHasNameAndLore("Tier Five", "100%"))
+                setTexture("textures/gui/t5_inv.png");
+            else if (ContainerScan.containerHasNameAndLore("Tier Four", "100%"))
+                setTexture("textures/gui/t4_inv.png");
+            else if (ContainerScan.containerHasNameAndLore("Tier Three", "100%"))
+                setTexture("textures/gui/t3_inv.png");
+            else if (ContainerScan.containerHasNameAndLore("Tier Two", "100%"))
+                setTexture("textures/gui/t2_inv.png");
+            else setTexture("textures/gui/t1_inv.png");
         }
     }
 }

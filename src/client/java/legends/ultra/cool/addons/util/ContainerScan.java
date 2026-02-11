@@ -2,6 +2,7 @@ package legends.ultra.cool.addons.util;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
@@ -34,7 +35,25 @@ public final class ContainerScan {
         for (int i = 0; i < screen.getScreenHandler().slots.toArray().length - 36; i++) {
             Slot slot = screen.getScreenHandler().slots.get(i);
             ItemStack stack = slot.getStack();
-            if (!stack.isEmpty() && Objects.equals(stack.getName().toString().toLowerCase(), "literal{"+name.toLowerCase()+"}")) {
+            if (!stack.isEmpty() && Objects.equals(stack.getName().toString().toLowerCase().replace(" ", "_"), "literal{"+name.toLowerCase()+"}")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean containerHasNameAndLore(String name, String lore) {
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (!(client.currentScreen instanceof HandledScreen<?> screen)) {
+            return false;
+        }
+
+        for (int i = 0; i < screen.getScreenHandler().slots.toArray().length - 36; i++) {
+            Slot slot = screen.getScreenHandler().slots.get(i);
+            ItemStack stack = slot.getStack();
+            if (!stack.isEmpty() && stack.getName().getString().toLowerCase().replace(" ", "_").equals(name.toLowerCase().replace(" ", "_")) &&
+                    stack.get(DataComponentTypes.LORE).toString().contains(lore)) {
                 return true;
             }
         }
