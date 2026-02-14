@@ -50,27 +50,31 @@ public class NameplateWidget extends HudWidget {
                         0f, 2f, 0.05f,
                         () -> true,
                         () -> WidgetConfigManager.getFloat(w, "yOffset", 1f),
-                        v -> WidgetConfigManager.setFloat(w, "yOffset", (float) v, true)
+                        v -> WidgetConfigManager.setFloat(w, "yOffset", (float) v, true),
+                        1f
                 ),
                 HudSetting.slider(
                         "scale", "Scale",
                         0.1f, 2f, 0.05f,
                         () -> true,
                         () -> WidgetConfigManager.getFloat(w, "scale", 1f),
-                        v -> WidgetConfigManager.setFloat(w, "scale", (float) v, true)
+                        v -> WidgetConfigManager.setFloat(w, "scale", (float) v, true),
+                        1f
                 ),
                 HudSetting.slider(
                         "range", "Block range",
                         1f, 100f, 1f,
                         () -> true,
                         () -> WidgetConfigManager.getFloat(w, "range", 50f),
-                        v -> WidgetConfigManager.setFloat(w, "range", (float) v, true)
+                        v -> WidgetConfigManager.setFloat(w, "range", (float) v, true),
+                        50f
                 ),
                 HudSetting.color(
                         "bgColor", "Nameplate Color",
                         () -> true,
                         () -> WidgetConfigManager.getInt(w, "bgColor", 0xFFFF0016),
-                        c -> WidgetConfigManager.setInt(w, "bgColor", c, true)
+                        c -> WidgetConfigManager.setInt(w, "bgColor", c, true),
+                        0xFFFF0016
                 )
         );
     }

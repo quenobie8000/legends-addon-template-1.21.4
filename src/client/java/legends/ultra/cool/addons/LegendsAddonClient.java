@@ -24,9 +24,7 @@ public class LegendsAddonClient implements ClientModInitializer {
         //load config
         WidgetConfigManager.load();
 
-        for (HudWidget widget : HudManager.getWidgets()) {
-            WidgetConfigManager.registerWidget(widget);
-        }
+
 
         HudRenderer.init();
         Keybinds.init();
@@ -44,6 +42,9 @@ public class LegendsAddonClient implements ClientModInitializer {
         addWidget(timerWidget);
         addWidget(nameplateWidget);
 
+        for (HudWidget widget : HudManager.getWidgets()) {
+            WidgetConfigManager.registerWidget(widget);
+        }
     }
 
     public void addWidget(HudWidget w) {

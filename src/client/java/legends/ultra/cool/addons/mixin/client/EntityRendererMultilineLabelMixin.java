@@ -92,10 +92,7 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
         float panelX = -panelW / 2f;
         float panelY = -padY - (panelH / 3f);
 
-        // RenderLayer usage in 1.21.11: use RenderLayers helpers (RenderLayer.of exists, but you don't want it here).
-        // This one is good for textured, alpha-blended, lit text-like layers.
-        RenderLayer layer = RenderLayers.text(NAMEPLATE_BORDER); // :contentReference[oaicite:3]{index=3}
-
+        RenderLayer layer = RenderLayers.text(NAMEPLATE_BORDER);
         // Submit the nine-slice as a custom queued render
         queue.submitCustom(matrices, layer, (entry, vc) -> {
             Matrix4f mat = entry.getPositionMatrix();
@@ -128,9 +125,9 @@ public abstract class EntityRendererMultilineLabelMixin<S extends EntityRenderSt
                     TextRenderer.TextLayerType.NORMAL,
                     light,
                     0xFFFFFFFF,
-                    0x00000000,
-                    0x00000000
-            ); // :contentReference[oaicite:5]{index=5}
+                    0x00FFFFFF,
+                    0x00FFFFFF
+            );
         }
 
         matrices.pop();

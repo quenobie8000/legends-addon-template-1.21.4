@@ -55,37 +55,37 @@ public class TextWidget extends HudWidget {
         final String w = this.getName();
 
         return List.of(
-                HudSetting.toggle(
-                        "bgToggle", "Background",
+                HudSetting.toggle("bgToggle", "Background",
                         () -> true,
                         () -> WidgetConfigManager.getBool(w, "bgToggle", true),
-                        b -> WidgetConfigManager.setBool(w, "bgToggle", b, true)
+                        b -> WidgetConfigManager.setBool(w, "bgToggle", b, true),
+                        true
                 ),
-                HudSetting.color(
-                        "bgColor", "BG Color",
+                HudSetting.color("bgColor", "BG Color",
                         () -> WidgetConfigManager.getBool(w, "bgToggle", true),
                         () -> WidgetConfigManager.getInt(w, "bgColor", 0x80000000),
-                        c -> WidgetConfigManager.setInt(w, "bgColor", c, true)
+                        c -> WidgetConfigManager.setInt(w, "bgColor", c, true),
+                        0x80000000
                 ),
 
-                HudSetting.toggle(
-                        "brdToggle", "Border",
+                HudSetting.toggle("brdToggle", "Border",
                         () -> true,
                         () -> WidgetConfigManager.getBool(w, "brdToggle", true),
-                        b -> WidgetConfigManager.setBool(w, "brdToggle", b, true)
+                        b -> WidgetConfigManager.setBool(w, "brdToggle", b, true),
+                        true
                 ),
-                HudSetting.color(
-                        "brdColor", "Border Color",
+                HudSetting.color("brdColor", "Border Color",
                         () -> WidgetConfigManager.getBool(w, "brdToggle", true),
                         () -> WidgetConfigManager.getInt(w, "brdColor", 0xFFFFFFFF),
-                        c -> WidgetConfigManager.setInt(w, "brdColor", c, true)
+                        c -> WidgetConfigManager.setInt(w, "brdColor", c, true),
+                        0xFFFFFFFF
                 ),
 
-                HudSetting.color(
-                        "textColor", "Text Color",
+                HudSetting.color("textColor", "Text Color",
                         () -> true,
                         () -> WidgetConfigManager.getInt(w, "textColor", 0xFFFFFFFF),
-                        c -> WidgetConfigManager.setInt(w, "textColor", c, true)
+                        c -> WidgetConfigManager.setInt(w, "textColor", c, true),
+                        0xFFFFFFFF
                 )
         );
     }

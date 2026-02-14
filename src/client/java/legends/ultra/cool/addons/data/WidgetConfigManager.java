@@ -13,104 +13,155 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WidgetConfigManager {
+public final class WidgetConfigManager {
+
+    private WidgetConfigManager() {}
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String FILE_NAME = "legendsaddon_widgets.json";
 
+    private static final Type MAP_TYPE = new TypeToken<Map<String, WidgetData>>() {}.getType();
+
     private static Map<String, WidgetData> widgetDataMap = new HashMap<>();
+    private static boolean loaded = false;
 
     private static Path getConfigPath() {
-        return MinecraftClient.getInstance().runDirectory.toPath().resolve(FILE_NAME);
+        return MinecraftClient.getInstance().runDirectory.toPath().resolve("config/" + FILE_NAME);
     }
 
+    // ------------------------------------------------------------
+    // Lifecycle
+    // ------------------------------------------------------------
+
     public static void load() {
+        if (loaded) return;
+        loaded = true;
+
         Path path = getConfigPath();
-        if (!Files.exists(path)) return;
+        if (!Files.exists(path)) {
+            widgetDataMap = new HashMap<>();
+            return;
+        }
 
         try (Reader reader = Files.newBufferedReader(path)) {
-            Type type = new TypeToken<Map<String, WidgetData>>() {}.getType();
-            Map<String, WidgetData> loaded = GSON.fromJson(reader, type);
-            if (loaded != null) widgetDataMap = loaded;
+            Map<String, WidgetData> loadedMap = GSON.fromJson(reader, MAP_TYPE);
+            widgetDataMap = (loadedMap != null) ? loadedMap : new HashMap<>();
         } catch (Exception e) {
             e.printStackTrace();
+            widgetDataMap = new HashMap<>();
         }
     }
 
     public static void save() {
         Path path = getConfigPath();
         try (Writer writer = Files.newBufferedWriter(path)) {
-            GSON.toJson(widgetDataMap, writer);
+            GSON.toJson(widgetDataMap, MAP_TYPE, writer);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /** Ensures we always have a WidgetData entry for this widget id/name. */
-    private static WidgetData dataFor(String widgetId) {
-        WidgetData d = widgetDataMap.get(widgetId);
-        if (d == null) {
-            d = new WidgetData();
-            widgetDataMap.put(widgetId, d);
-        }
-        return d;
+    public static boolean configExists() {
+        return Files.exists(getConfigPath());
     }
 
     // ------------------------------------------------------------
-    // Public API used by your HUD system
+    // Widget registration / persistence
     // ------------------------------------------------------------
 
+    /**
+     * Call once per widget at startup (after load()).
+     *
+     * If the widget exists in JSON: apply x/y/enabled to the widget.
+     * If it does not exist: create an entry with widget defaults + default settings and save.
+     */
     public static void registerWidget(HudWidget widget) {
         if (widget == null) return;
+        load();
 
         String id = widget.getName();
-        WidgetData data = dataFor(id);
+        WidgetData data = widgetDataMap.get(id);
+
+        if (data == null) {
+            // First time ever: seed file with defaults from the widget object
+            data = new WidgetData();
+            data.x = widget.x;
+            data.y = widget.y;
+            data.enabled = widget.enabled;
+
+            // Seed default settings from widget.getSettings()
+            for (HudWidget.HudSetting s : safeSettings(widget)) {
+                seedDefaultSettingIfMissing(data, s);
+            }
+
+            widgetDataMap.put(id, data);
+            save();
+            return;
+        }
+
+        // Exists already: apply saved state to widget
+        widget.x = data.x;
+        widget.y = data.y;
+        widget.enabled = data.enabled;
+
+        // Also ensure NEW settings added in an update get default values in JSON
+        boolean changed = false;
+        for (HudWidget.HudSetting s : safeSettings(widget)) {
+            if (!data.settings.containsKey(s.key())) {
+                seedDefaultSettingIfMissing(data, s);
+                changed = true;
+            }
+        }
+        if (changed) save();
+    }
+
+    /**
+     * Call when you want to persist position/enabled changes (dragging/toggle).
+     * Does NOT overwrite settings.
+     */
+    public static void updateWidget(HudWidget widget) {
+        if (widget == null) return;
+        load();
+
+        String id = widget.getName();
+        WidgetData data = widgetDataMap.get(id);
+        if (data == null) {
+            // If someone forgot to register, fallback:
+            registerWidget(widget);
+            data = widgetDataMap.get(id);
+            if (data == null) return;
+        }
 
         data.x = widget.x;
         data.y = widget.y;
         data.enabled = widget.enabled;
-    }
-
-    /**
-     * Keeps your old call sites working:
-     * - saves position/enabled
-     * - saves the standard WidgetStyle fields
-     * - writes to disk
-     */
-    public static void updateWidget(HudWidget widget) {
-        if (widget == null) return;
-
-        String id = widget.getName();
-        WidgetData data = dataFor(id);
-
-        data.x = widget.x;
-        data.y = widget.y;
-        data.enabled = widget.isEnabled();
-
         save();
     }
 
     public static void resetAll() {
+        load();
         widgetDataMap.clear();
         save();
     }
 
     public static void clearSetting(String widgetId, String key, boolean autosave) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = widgetDataMap.get(widgetId);
+        if (d == null) return;
         if (d.settings.remove(key) != null && autosave) save();
     }
 
     // ------------------------------------------------------------
-    // Generic per-widget setting getters/setters
-    // These are what your dynamic settings UI should use.
+    // Settings API (generic)
     // ------------------------------------------------------------
 
-    // --- String widgetId overloads (useful in mixins) ---
-
     public static boolean getBool(String widgetId, String key, boolean def) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = widgetDataMap.get(widgetId);
+        if (d == null) return def;
         JsonElement e = d.settings.get(key);
         if (e == null || !e.isJsonPrimitive()) return def;
+
         JsonPrimitive p = e.getAsJsonPrimitive();
         try {
             if (p.isBoolean()) return p.getAsBoolean();
@@ -121,9 +172,12 @@ public class WidgetConfigManager {
     }
 
     public static int getInt(String widgetId, String key, int def) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = widgetDataMap.get(widgetId);
+        if (d == null) return def;
         JsonElement e = d.settings.get(key);
         if (e == null || !e.isJsonPrimitive()) return def;
+
         JsonPrimitive p = e.getAsJsonPrimitive();
         try {
             if (p.isNumber()) return p.getAsInt();
@@ -134,9 +188,12 @@ public class WidgetConfigManager {
     }
 
     public static float getFloat(String widgetId, String key, float def) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = widgetDataMap.get(widgetId);
+        if (d == null) return def;
         JsonElement e = d.settings.get(key);
         if (e == null || !e.isJsonPrimitive()) return def;
+
         JsonPrimitive p = e.getAsJsonPrimitive();
         try {
             if (p.isNumber()) return p.getAsFloat();
@@ -147,50 +204,81 @@ public class WidgetConfigManager {
     }
 
     public static String getString(String widgetId, String key, String def) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = widgetDataMap.get(widgetId);
+        if (d == null) return def;
         JsonElement e = d.settings.get(key);
         if (e == null || !e.isJsonPrimitive()) return def;
-        JsonPrimitive p = e.getAsJsonPrimitive();
+
         try {
-            return p.getAsString();
+            return e.getAsString();
         } catch (Exception ignored) {}
         return def;
     }
 
     public static void setBool(String widgetId, String key, boolean value, boolean autosave) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = ensure(widgetId);
         d.settings.put(key, new JsonPrimitive(value));
         if (autosave) save();
     }
 
     public static void setInt(String widgetId, String key, int value, boolean autosave) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = ensure(widgetId);
         d.settings.put(key, new JsonPrimitive(value));
         if (autosave) save();
     }
 
     public static void setFloat(String widgetId, String key, float value, boolean autosave) {
-        WidgetData d = dataFor(widgetId);
+        load();
+        WidgetData d = ensure(widgetId);
         d.settings.put(key, new JsonPrimitive(value));
         if (autosave) save();
     }
 
-    private static void setString(String widgetId, String key, String value, boolean autosave) {
-        WidgetData d = dataFor(widgetId);
+    public static void setString(String widgetId, String key, String value, boolean autosave) {
+        load();
+        WidgetData d = ensure(widgetId);
         d.settings.put(key, new JsonPrimitive(value));
         if (autosave) save();
+    }
+
+    // ------------------------------------------------------------
+    // Internals
+    // ------------------------------------------------------------
+
+    private static WidgetData ensure(String widgetId) {
+        WidgetData d = widgetDataMap.get(widgetId);
+        if (d == null) {
+            d = new WidgetData();
+            widgetDataMap.put(widgetId, d);
+        }
+        return d;
+    }
+
+    private static Iterable<HudWidget.HudSetting> safeSettings(HudWidget w) {
+        var s = w.getSettings();
+        return (s != null) ? s : java.util.List.of();
+    }
+
+    private static void seedDefaultSettingIfMissing(WidgetData data, HudWidget.HudSetting s) {
+        // Only called when key is missing
+        switch (s.type()) {
+            case TOGGLE -> data.settings.put(s.key(), new JsonPrimitive(s.defaultBool()));
+            case COLOR  -> data.settings.put(s.key(), new JsonPrimitive(s.defaultColor()));
+            case SLIDER -> data.settings.put(s.key(), new JsonPrimitive(s.defaultFloat()));
+        }
     }
 
     // ------------------------------------------------------------
     // Data model
     // ------------------------------------------------------------
 
-    public static class WidgetData {
+    public static final class WidgetData {
         public double x;
         public double y;
-        public boolean enabled = true;
-
-        /** New: generic settings map */
+        public boolean enabled;
         public Map<String, JsonElement> settings = new HashMap<>();
     }
 }

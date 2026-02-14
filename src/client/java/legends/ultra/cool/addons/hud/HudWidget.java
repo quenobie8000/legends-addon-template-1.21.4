@@ -66,38 +66,44 @@ public abstract class HudWidget {
             java.util.function.IntSupplier getColor,
             java.util.function.IntConsumer setColor,
             java.util.function.DoubleSupplier getFloat,
-            java.util.function.DoubleConsumer setFloat
+            java.util.function.DoubleConsumer setFloat,
+            boolean defaultBool,
+            int defaultColor,
+            float defaultFloat
     ) {
         public enum Type { TOGGLE, COLOR, SLIDER }
 
         public static HudSetting toggle(String key, String label,
                                         java.util.function.BooleanSupplier enabled,
                                         java.util.function.BooleanSupplier get,
-                                        java.util.function.Consumer<Boolean> set) {
+                                        java.util.function.Consumer<Boolean> set,
+                                        boolean def) {
             return new HudSetting(key, label, Type.TOGGLE, 0,0,0,
                     enabled, get, set,
-                    ()->0, c->{}, ()->0, v->{});
+                    ()->0, c->{}, ()->0, v->{}, def, 0, 0f);
         }
 
         public static HudSetting color(String key, String label,
                                        java.util.function.BooleanSupplier enabled,
                                        java.util.function.IntSupplier get,
-                                       java.util.function.IntConsumer set) {
+                                       java.util.function.IntConsumer set,
+                                       int def) {
             return new HudSetting(key, label, Type.COLOR, 0,0,0,
                     enabled, ()->false, b->{},
                     get, set,
-                    ()->0, v->{});
+                    ()->0, v->{}, false, def, 0f);
         }
 
         public static HudSetting slider(String key, String label,
                                         float min, float max, float step,
                                         java.util.function.BooleanSupplier enabled,
                                         java.util.function.DoubleSupplier get,
-                                        java.util.function.DoubleConsumer set) {
+                                        java.util.function.DoubleConsumer set,
+                                        float def) {
             return new HudSetting(key, label, Type.SLIDER, min,max,step,
                     enabled, ()->false, b->{},
                     ()->0, c->{},
-                    get, set);
+                    get, set, false, 0, def);
         }
     }
 
