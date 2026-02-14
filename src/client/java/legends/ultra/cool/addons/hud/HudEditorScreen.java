@@ -9,7 +9,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.MouseInput;
 import net.minecraft.text.Text;
 
-import javax.naming.Context;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,15 +16,14 @@ public class HudEditorScreen extends Screen {
     private static final int PANEL_WIDTH = 120;
     private static final int HEADER_HEIGHT = 16;
     private static final int ROW_HEIGHT = 14;
+
     private static final int MODAL_W = 220;
     private static final int MODAL_H = 180;
     private static final int MODAL_PAD = 8;
 
-    // Settings rows
     private static final int SETTINGS_ROW_H = 16;
     private static final int SETTINGS_ROW_GAP = 6;
 
-    // Reset button
     private static final int RESET_W = 12;
     private static final int RESET_H = 12;
 
@@ -35,11 +33,11 @@ public class HudEditorScreen extends Screen {
 
     private HudWidget settingsWidget = null; // null = closed
 
-    // Color picker
+    // Color picker state
     private ColorPicker colorPicker = null;
-    private String openColorKey = null; // which setting key opened it
+    private String openColorKey = null;
 
-    // Slider drag state
+    // Slider dragging state
     private String draggingSliderKey = null;
 
     public HudEditorScreen() {
@@ -57,6 +55,7 @@ public class HudEditorScreen extends Screen {
     private int modalX() {
         int base = (this.width - MODAL_W) / 2;
 
+        // if picker open, shift modal slightly so the pair feels centered
         if (colorPicker != null) {
             int pickerW = colorPicker.getWidth();
             int gap = 8;
@@ -70,10 +69,6 @@ public class HudEditorScreen extends Screen {
         return (this.height - MODAL_H) / 2;
     }
 
-    private int modalW() {
-        return MODAL_W;
-    }
-
     private static boolean inside(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
@@ -82,9 +77,9 @@ public class HudEditorScreen extends Screen {
         return Optional.ofNullable(w.getSettings()).orElse(List.of());
     }
 
-    // -----------------------------------
-    // Mouse input
-    // -----------------------------------
+    // -----------------------------
+    // Mouse input (1.21.11 signatures)
+    // -----------------------------
 
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
@@ -92,25 +87,24 @@ public class HudEditorScreen extends Screen {
         double mouseY = click.y();
         int button = click.button();
 
-        int x = panelX();
-
-        // If settings modal is open, handle it first
+        // Modal handles input first
         if (isSettingsOpen()) {
             if (colorPicker != null && colorPicker.mouseClicked(mouseX, mouseY, button)) return true;
             return handleSettingsClick(mouseX, mouseY, button);
         }
 
-        // Header click (collapse/expand)
+        int x = panelX();
+
+        // Header (collapse/expand)
         int headerLeft = panelExpanded ? x : x + PANEL_WIDTH - HEADER_HEIGHT;
         int headerRight = x + PANEL_WIDTH;
 
-        if (mouseX >= headerLeft && mouseX <= headerRight
-                && mouseY >= 0 && mouseY <= HEADER_HEIGHT) {
+        if (mouseX >= headerLeft && mouseX <= headerRight && mouseY >= 0 && mouseY <= HEADER_HEIGHT) {
             panelExpanded = !panelExpanded;
             return true;
         }
 
-        // If panel is collapsed, only allow dragging widgets on canvas
+        // Panel collapsed: only drag widgets
         if (!panelExpanded) {
             for (HudWidget widget : HudManager.getWidgets()) {
                 if (!widget.isEnabled()) continue;
@@ -121,39 +115,44 @@ public class HudEditorScreen extends Screen {
                     return true;
                 }
             }
-            return super.mouseClicked(new Click(mouseX, mouseY, new MouseInput(button,0)), false);
+            return super.mouseClicked(new Click(mouseX, mouseY, new MouseInput(button, 0)), doubled);
         }
 
-        // Panel toggle clicks
+        // Panel list clicks
         int y = HEADER_HEIGHT + 4;
         for (HudWidget widget : HudManager.getWidgets()) {
+            if (widget == null) continue;
+
             int x1 = x + 5;
             int y1 = y;
             int x2 = x + PANEL_WIDTH - ROW_HEIGHT - 5;
             int y2 = y + ROW_HEIGHT;
 
-            // toggle enabled
-            if (mouseX >= x1 && mouseX <= x2 && mouseY >= y1 && mouseY <= y2 && widget != null) {
+            // toggle enable
+            if (inside(mouseX, mouseY, x1, y1, x2 - x1, y2 - y1)) {
                 widget.toggle();
                 WidgetConfigManager.updateWidget(widget);
                 return true;
             }
 
-            // settings button
+            // settings button area
             int sx1 = x + PANEL_WIDTH - ROW_HEIGHT - 5;
             int sy1 = y;
             int sx2 = x + PANEL_WIDTH - 5;
             int sy2 = y + ROW_HEIGHT;
 
-            if (mouseX >= sx1 && mouseX <= sx2 && mouseY >= sy1 && mouseY <= sy2 && widget != null) {
+            if (inside(mouseX, mouseY, sx1, sy1, sx2 - sx1, sy2 - sy1)) {
                 settingsWidget = widget;
+                colorPicker = null;
+                openColorKey = null;
+                draggingSliderKey = null;
                 return true;
             }
 
             y += ROW_HEIGHT + 2;
         }
 
-        // Dragging selection on canvas (after panel clicks)
+        // Canvas dragging selection
         for (HudWidget widget : HudManager.getWidgets()) {
             if (!widget.isEnabled()) continue;
             if (widget.isMouseOver(mouseX, mouseY)) {
@@ -168,19 +167,17 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+    public boolean mouseDragged(Click click, double dx, double dy) {
         double mouseX = click.x();
         double mouseY = click.y();
         int button = click.button();
 
-        // Settings modal drag (slider / picker)
+        // Modal dragging (picker / slider)
         if (isSettingsOpen()) {
-            if (colorPicker != null && colorPicker.mouseDragged(mouseX, mouseY, button, offsetX, offsetY)) return true;
+            if (colorPicker != null && colorPicker.mouseDragged(mouseX, mouseY, button, dx, dy)) return true;
 
-            // Slider dragging: only if we started drag on a slider bar
             if (draggingSliderKey != null) {
                 SettingsLayout l = beginSettingsLayout();
-
                 for (HudWidget.HudSetting s : safeSettings(settingsWidget)) {
                     int rowY = nextRowY(l);
 
@@ -190,18 +187,14 @@ public class HudEditorScreen extends Screen {
 
                     int barX = l.sliderBarX;
                     int barW = l.sliderBarW;
-                    int barY = rowY - 1;
-                    int barH = 12;
 
                     float t = (float) ((mouseX - barX) / (double) barW);
                     t = Math.max(0f, Math.min(1f, t));
+
                     float raw = s.min() + t * (s.max() - s.min());
-
-                    float snapped = (s.step() > 0f)
-                            ? (Math.round(raw / s.step()) * s.step())
-                            : raw;
-
+                    float snapped = (s.step() > 0f) ? (Math.round(raw / s.step()) * s.step()) : raw;
                     snapped = Math.max(s.min(), Math.min(s.max(), snapped));
+
                     s.setFloat().accept(snapped);
                     WidgetConfigManager.updateWidget(settingsWidget);
                     return true;
@@ -213,15 +206,15 @@ public class HudEditorScreen extends Screen {
 
         // Normal canvas dragging
         if (dragging != null) {
-            dragging.x += offsetX;
-            dragging.y += offsetY;
+            dragging.x += dx;
+            dragging.y += dy;
 
             dragging.x = Math.max(0, Math.min(dragging.x, this.width - dragging.getWidth()));
             dragging.y = Math.max(0, Math.min(dragging.y, this.height - dragging.getHeight()));
             return true;
         }
 
-        return super.mouseDragged(click, offsetX, offsetY);
+        return super.mouseDragged(click, dx, dy);
     }
 
     @Override
@@ -249,9 +242,9 @@ public class HudEditorScreen extends Screen {
         return super.mouseReleased(click);
     }
 
-    // -----------------------------------
-    // Settings modal: input logic
-    // -----------------------------------
+    // -----------------------------
+    // Settings modal logic
+    // -----------------------------
 
     private void openColorPicker(HudWidget.HudSetting s, int px, int py, int pw) {
         if (openColorKey != null && openColorKey.equals(s.key())) {
@@ -274,11 +267,10 @@ public class HudEditorScreen extends Screen {
     private boolean handleSettingsClick(double mouseX, double mouseY, int button) {
         int x = modalX();
         int y = modalY();
-        int w = modalW();
 
-        // Close "✕"
+        // Close X
         String close = "✕";
-        int closeX = x + w - 14;
+        int closeX = x + MODAL_W - 14;
         int closeY = y + 6;
         int cw = textRenderer.getWidth(close);
         int ch = textRenderer.fontHeight;
@@ -297,11 +289,11 @@ public class HudEditorScreen extends Screen {
         for (HudWidget.HudSetting s : safeSettings(settingsWidget)) {
             int rowY = nextRowY(l);
 
-            // Reset click
+            // Reset per-row
             if (inside(mouseX, mouseY, l.resetX, rowY - 1, RESET_W, RESET_H)) {
                 WidgetConfigManager.clearSetting(settingsWidget.getName(), s.key(), true);
 
-                // apply default back into the widget fields by invoking getter+setter once
+                // Force re-apply defaults (by reading “default” and writing it once)
                 switch (s.type()) {
                     case TOGGLE -> s.setBool().accept(s.getBool().getAsBoolean());
                     case COLOR -> s.setColor().accept(s.getColor().getAsInt());
@@ -322,20 +314,18 @@ public class HudEditorScreen extends Screen {
 
             switch (s.type()) {
                 case TOGGLE -> {
+                    if (!s.enabled().getAsBoolean()) break;
+
                     int pillY = rowY - 2;
-                    if (s.enabled().getAsBoolean() && inside(mouseX, mouseY, l.toggleX, pillY, l.toggleW, l.btnH)) {
+                    if (inside(mouseX, mouseY, l.toggleX, pillY, l.toggleW, l.btnH)) {
                         boolean newVal = !s.getBool().getAsBoolean();
                         s.setBool().accept(newVal);
                         WidgetConfigManager.updateWidget(settingsWidget);
 
-                        // If we turned off the setting that owns the open color picker, close it.
+                        // If we turned off something while picker open, just close picker (safe default)
                         if (!newVal && openColorKey != null) {
-                            if (openColorKey.equals("bgColor") || openColorKey.equals("brdColor") || openColorKey.equals("textColor")) {
-                                // we don't know which toggle controls which color globally,
-                                // but closing is harmless + avoids stuck pickers.
-                                openColorKey = null;
-                                colorPicker = null;
-                            }
+                            openColorKey = null;
+                            colorPicker = null;
                         }
                         return true;
                     }
@@ -346,11 +336,10 @@ public class HudEditorScreen extends Screen {
 
                     int btnY = rowY - 2;
                     if (inside(mouseX, mouseY, l.btnX, btnY, l.btnW, l.btnH)) {
-                        // open picker to the right of modal by default
                         int gap = 6;
                         int pickerW = 180;
 
-                        int px = modalX() + modalW() + gap;
+                        int px = modalX() + MODAL_W + gap;
                         int py = modalY();
 
                         if (px + pickerW > this.width) {
@@ -375,13 +364,11 @@ public class HudEditorScreen extends Screen {
 
                         float t = (float) ((mouseX - barX) / (double) barW);
                         t = Math.max(0f, Math.min(1f, t));
+
                         float raw = s.min() + t * (s.max() - s.min());
-
-                        float snapped = (s.step() > 0f)
-                                ? (Math.round(raw / s.step()) * s.step())
-                                : raw;
-
+                        float snapped = (s.step() > 0f) ? (Math.round(raw / s.step()) * s.step()) : raw;
                         snapped = Math.max(s.min(), Math.min(s.max(), snapped));
+
                         s.setFloat().accept(snapped);
                         WidgetConfigManager.updateWidget(settingsWidget);
                         return true;
@@ -393,53 +380,50 @@ public class HudEditorScreen extends Screen {
         return true;
     }
 
-    // -----------------------------------
+    // -----------------------------
     // Rendering
-    // -----------------------------------
+    // -----------------------------
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
-        super.render(context, mouseX, mouseY, delta);
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        super.render(ctx, mouseX, mouseY, delta);
 
         for (HudWidget widget : HudManager.getWidgets()) {
-            if (widget.isEnabled()) widget.render(context);
+            if (widget.isEnabled()) widget.render(ctx);
         }
 
-        renderWidgetList(context);
-        renderPanelHeader(context);
-        renderSettingsModal(context, mouseX, mouseY);
+        renderWidgetList(ctx);
+        renderPanelHeader(ctx);
+        renderSettingsModal(ctx, mouseX, mouseY);
     }
 
-    private void renderPanelHeader(DrawContext context) {
+    private void renderPanelHeader(DrawContext ctx) {
         int x = panelX();
-        int y = 0;
 
-        context.fill(
-                panelExpanded ? x : x + PANEL_WIDTH - HEADER_HEIGHT, y,
-                x + PANEL_WIDTH, HEADER_HEIGHT,
+        ctx.fill(
+                panelExpanded ? x : x + PANEL_WIDTH - HEADER_HEIGHT,
+                0,
+                x + PANEL_WIDTH,
+                HEADER_HEIGHT,
                 0xCC000000
         );
 
         String arrow = panelExpanded ? "▶" : "☰";
-
-        context.drawText(
-                MinecraftClient.getInstance().textRenderer,
+        ctx.drawText(MinecraftClient.getInstance().textRenderer,
                 panelExpanded ? arrow + " Widgets" : arrow,
                 panelExpanded ? x + 6 : x + PANEL_WIDTH - HEADER_HEIGHT + 6,
-                y + 4,
-                0xFFFFFF,
+                4,
+                0xFFFFFFFF,
                 false
         );
     }
 
-    private void renderWidgetList(DrawContext context) {
+    private void renderWidgetList(DrawContext ctx) {
+        int x = panelX();
+
         if (!panelExpanded) return;
 
-        int x = panelX();
-        int y = HEADER_HEIGHT + 4;
-
-        context.fill(
+        ctx.fill(
                 x,
                 HEADER_HEIGHT,
                 x + PANEL_WIDTH,
@@ -447,37 +431,37 @@ public class HudEditorScreen extends Screen {
                 0xAA000000
         );
 
+        int y = HEADER_HEIGHT + 4;
         for (HudWidget widget : HudManager.getWidgets()) {
+            if (widget == null) continue;
+
             int bgColor = widget.isEnabled() ? 0xFF2ECC71 : 0xFF7F8C8D;
 
-            context.fill(
-                    x + 5, y,
-                    x + PANEL_WIDTH - 5, y + ROW_HEIGHT,
-                    bgColor
-            );
+            ctx.fill(x + 5, y, x + PANEL_WIDTH - 5, y + ROW_HEIGHT, bgColor);
 
-            context.drawText(
+            ctx.drawText(
                     MinecraftClient.getInstance().textRenderer,
                     widget.getName(),
                     x + 8,
                     y + 3,
-                    0x000000,
+                    0xFF000000,
                     false
             );
 
             // settings button
-            context.fill(
-                    x + PANEL_WIDTH - ROW_HEIGHT - 5, y,
-                    x + PANEL_WIDTH - 5, y + ROW_HEIGHT,
+            ctx.fill(
+                    x + PANEL_WIDTH - ROW_HEIGHT - 5,
+                    y,
+                    x + PANEL_WIDTH - 5,
+                    y + ROW_HEIGHT,
                     0xFF7F8C8D
             );
-
-            context.drawText(
+            ctx.drawText(
                     MinecraftClient.getInstance().textRenderer,
                     "⚙",
                     x + PANEL_WIDTH - ROW_HEIGHT - 1,
                     y + 3,
-                    0xFFFFFF,
+                    0xFFFFFFFF,
                     false
             );
 
@@ -490,51 +474,40 @@ public class HudEditorScreen extends Screen {
 
         int x = modalX();
         int y = modalY();
-        int w = modalW();
-        int gap = 6;
 
-        // dim background
+        // dim
         ctx.fill(0, 0, this.width, this.height, 0x88000000);
 
-        // modal
-        ctx.fill(x, y, x + w, y + MODAL_H, 0xFF111111);
-        drawBorder(ctx, x, y, w, MODAL_H, 0xFFFFFFF);
+        // panel
+        ctx.fill(x, y, x + MODAL_W, y + MODAL_H, 0xFF111111);
+        drawBorder(ctx, x, y, MODAL_W, MODAL_H, 0xFFFFFFFF);
 
         // title
-        ctx.drawText(textRenderer,
-                settingsWidget.getName() + " Settings",
-                x + 8, y + 8,
-                0xFFFFFF, false
-        );
+        ctx.drawText(textRenderer, settingsWidget.getName() + " Settings", x + 8, y + 8, 0xFFFFFFFF, false);
 
-        // close button
+        // close
         String close = "✕";
-        int closeX = x + w - 14;
-        int closeY = y + 6;
-        ctx.drawText(textRenderer, close, closeX, closeY, 0xFFFFFF, false);
+        ctx.drawText(textRenderer, close, x + MODAL_W - 14, y + 6, 0xFFFFFFFF, false);
 
         SettingsLayout l = beginSettingsLayout();
 
         for (HudWidget.HudSetting s : safeSettings(settingsWidget)) {
             int rowY = nextRowY(l);
 
-            // reset button per row
             drawResetButton(ctx, l.resetX, rowY - 1, mouseX, mouseY);
 
             switch (s.type()) {
                 case TOGGLE -> {
                     boolean enabled = s.enabled().getAsBoolean();
                     boolean val = s.getBool().getAsBoolean();
-
-                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFF : 0x777777, false);
+                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0x777777, false);
                     drawTogglePill(ctx, l.toggleX, rowY - 2, l.toggleW, l.btnH, val, enabled);
                 }
 
                 case COLOR -> {
                     boolean enabled = s.enabled().getAsBoolean();
                     int argb = s.getColor().getAsInt();
-
-                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFF : 0x777777, false);
+                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0x777777, false);
 
                     if (enabled) {
                         drawPickButton(ctx, l.btnX, rowY - 2, l.btnW, l.btnH, mouseX, mouseY);
@@ -547,18 +520,18 @@ public class HudEditorScreen extends Screen {
                 case SLIDER -> {
                     boolean enabled = s.enabled().getAsBoolean();
                     float val = (float) s.getFloat().getAsDouble();
-
-                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFF : 0x777777, false);
+                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0x777777, false);
                     drawSliderRow(ctx, l, rowY, mouseX, mouseY, val, s.min(), s.max(), s.step(), enabled);
                 }
             }
         }
 
-        // Render picker (if open)
+        // picker
         if (colorPicker != null) {
+            int gap = 6;
             int pickerW = colorPicker.getWidth();
 
-            int px = modalX() + w + gap;
+            int px = modalX() + MODAL_W + gap;
             int py = modalY();
 
             if (px + pickerW > this.width) {
@@ -570,41 +543,46 @@ public class HudEditorScreen extends Screen {
         }
     }
 
-    // -----------------------------------
+    // -----------------------------
     // Drawing helpers
-    // -----------------------------------
+    // -----------------------------
 
     private void drawPickButton(DrawContext ctx, int x, int y, int w, int h, int mouseX, int mouseY) {
-        boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
+        boolean hovered = inside(mouseX, mouseY, x, y, w, h);
         int bg = hovered ? 0xFF444444 : 0xFF333333;
         ctx.fill(x, y, x + w, y + h, bg);
         drawBorder(ctx, x, y, w, h, 0xFF000000);
-        ctx.drawText(textRenderer, "Pick", x + 18, y + 3, 0xFFFFFF, false);
+        ctx.drawText(textRenderer, "Pick", x + 18, y + 3, 0xFFFFFFFF, false);
     }
 
     private void drawSwatch(DrawContext ctx, int x, int y, int color) {
         ctx.fill(x, y, x + 12, y + 12, color);
         drawBorder(ctx, x, y, 12, 12, 0xFF000000);
-
     }
 
     private void drawTogglePill(DrawContext ctx, int x, int y, int w, int h, boolean on, boolean enabled) {
         int bg = on ? 0xFF2ECC71 : 0xFF7F8C8D;
         if (!enabled) bg = 0xFF444444;
+
         ctx.fill(x, y, x + w, y + h, bg);
         drawBorder(ctx, x, y, w, h, 0xFF000000);
-        ctx.drawText(textRenderer, on ? "ON" : "OFF", x + 10, y + 3, 0xFF000000, false);
+
+        int txt = enabled ? 0xFF000000 : 0xFF1A1A1A;
+        ctx.drawText(textRenderer, on ? "ON" : "OFF", x + 10, y + 3, txt, false);
     }
 
     private void drawResetButton(DrawContext ctx, int x, int y, int mouseX, int mouseY) {
-        boolean hovered = mouseX >= x && mouseX <= x + RESET_W && mouseY >= y && mouseY <= y + RESET_H;
+        boolean hovered = inside(mouseX, mouseY, x, y, RESET_W, RESET_H);
         int bg = hovered ? 0xFF555555 : 0xFF333333;
+
         ctx.fill(x, y, x + RESET_W, y + RESET_H, bg);
-        drawBorder(ctx, x, y, RESET_W, RESET_H, 0xFF000000);
+        drawBorder(ctx,x, y, RESET_W, RESET_H, 0xFF000000);
+
+        // Bigger icon without weird matrix calls
         ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(x + 3, y - 4);
-        ctx.getMatrices().scale(2f, 2f);
-        ctx.drawText(textRenderer, "↺", 0, 0, 0xFFFFFF, false);
+        ctx.getMatrices().translate(x + 3, y + 1);
+        ctx.getMatrices().scale(1.5f, 1.5f);
+        ctx.drawText(textRenderer, "↺", 0, 0, 0xFFFFFFFF, false);
         ctx.getMatrices().popMatrix();
     }
 
@@ -616,10 +594,8 @@ public class HudEditorScreen extends Screen {
         int barH = 12;
 
         int bg = enabled ? 0xFF2A2A2A : 0xFF1F1F1F;
-        int border = 0xFF000000;
-
         ctx.fill(barX, barY, barX + barW, barY + barH, bg);
-        drawBorder(ctx, barX, barY, barW, barH, border);
+        drawBorder(ctx, barX, barY, barW, barH, 0xFF000000);
 
         float t = (max == min) ? 0f : (value - min) / (max - min);
         t = Math.max(0f, Math.min(1f, t));
@@ -627,7 +603,7 @@ public class HudEditorScreen extends Screen {
         int knobX = barX + (int) (t * (barW - 4));
         ctx.fill(knobX, barY, knobX + 4, barY + barH, enabled ? 0xFF7F8C8D : 0xFF444444);
 
-        String v = String.format("%.2f", value);
+        String v = (step >= 1f) ? String.format("%.0f", value) : String.format("%.2f", value);
         ctx.drawText(textRenderer, v,
                 barX + (barW / 2) - (textRenderer.getWidth(v) / 2),
                 rowY + 1,
@@ -636,9 +612,9 @@ public class HudEditorScreen extends Screen {
         );
     }
 
-    // -----------------------------------
-    // Settings layout (row positions)
-    // -----------------------------------
+    // -----------------------------
+    // Layout
+    // -----------------------------
 
     private int settingsRowIndex = 0;
 
@@ -672,7 +648,6 @@ public class HudEditorScreen extends Screen {
 
         int x = modalX();
         int y = modalY();
-        int w = modalW();
 
         int startX = x + MODAL_PAD;
         int startY = y + 28;
@@ -680,7 +655,7 @@ public class HudEditorScreen extends Screen {
         int btnW = 60;
         int btnH = 14;
 
-        int rightEdge = x + w - MODAL_PAD;
+        int rightEdge = x + MODAL_W - MODAL_PAD;
 
         int resetX = rightEdge - RESET_W;
         int controlsRight = resetX - 4;
@@ -690,7 +665,6 @@ public class HudEditorScreen extends Screen {
         int toggleW = 42;
         int toggleX = controlsRight - toggleW;
 
-        // slider lives left of reset button too
         int sliderBarW = 120;
         int sliderBarX = controlsRight - sliderBarW;
 

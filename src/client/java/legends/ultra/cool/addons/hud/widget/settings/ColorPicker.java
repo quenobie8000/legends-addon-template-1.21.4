@@ -155,7 +155,7 @@ public class ColorPicker {
             String label
     ) {
         // Label
-        ctx.drawText(tr, label + ": " + value, x, y - 9, 0xFFFFFF, false);
+        ctx.drawText(tr, label + ": " + value, x, y - 9, 0xFFFFFFFF, false);
 
         // Background
         ctx.fill(x, y, x + w, y + h, 0xFF222222);

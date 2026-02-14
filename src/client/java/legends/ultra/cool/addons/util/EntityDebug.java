@@ -44,7 +44,7 @@ public class EntityDebug {
         if (mobName.matches(".*?(\\d+).*\\/(\\d+).*")) currentHp = Double.parseDouble(mobName.replaceAll(".*?(\\d+(?:[.,]\\d+)?).*?\\/.*?(\\d+(?:[.,]\\d+)?).*", "$1"));
         if (mobName.matches(".*?(\\d+).*\\/(\\d+).*")) maxHp = Double.parseDouble(mobName.replaceAll(".*?(\\d+(?:[.,]\\d+)?).*?\\/.*?(\\d+(?:[.,]\\d+)?).*", "$2"));
 
-        return new double[]{currentHp, maxHp, (double) itemDef.get(), (double) itemDmg.get()};
+        return new double[]{currentHp, maxHp, (int) itemDef.get(), (int) itemDmg.get()};
     }
 
     private static Optional<Object> readCustomInt(ItemStack stack, String key) {
