@@ -27,7 +27,7 @@ public class ClientTickHandler {
                     timer.tick(timer.getToggleState());
                 }
 
-                if ((client.currentScreen instanceof HandledScreen<?> )) ContainerOverlay.fTreeCheck();
+                if ((client.currentScreen instanceof HandledScreen<?>)) ContainerOverlay.fTreeCheck();
 
 
             });

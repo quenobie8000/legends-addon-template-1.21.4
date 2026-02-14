@@ -19,19 +19,21 @@ public final class ContainerOverlay {
 
 
     public static void init() {
-
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            // Register a per-screen render hook
-            ScreenEvents.afterRender(screen).register((scr, ctx, mouseX, mouseY, delta) -> {
-                if (!(scr instanceof HandledScreen<?> hs)) return;
 
+            // Draw BEFORE the screen finishes (tooltips are later)
+            ScreenEvents.afterBackground(screen).register((scr, ctx, mouseX, mouseY, delta) -> {
+                if (!(scr instanceof HandledScreen<?> hs)) return;
                 if (!shouldOverlay(hs)) return;
 
                 drawOverlay(hs, ctx);
             });
-        });
 
+            // OPTIONAL: If you still want per-frame checks (like fTreeCheck), do it here too:
+            // ScreenEvents.beforeRender(screen).register((scr, ctx, mouseX, mouseY, delta) -> fTreeCheck());
+        });
     }
+
 
     public static void setTexture(String texturePath) {
         texture = Identifier.of("legends-addon", texturePath);

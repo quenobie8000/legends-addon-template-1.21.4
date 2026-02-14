@@ -500,27 +500,27 @@ public class HudEditorScreen extends Screen {
                 case TOGGLE -> {
                     boolean enabled = s.enabled().getAsBoolean();
                     boolean val = s.getBool().getAsBoolean();
-                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0x777777, false);
+                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0xFF777777, false);
                     drawTogglePill(ctx, l.toggleX, rowY - 2, l.toggleW, l.btnH, val, enabled);
                 }
 
                 case COLOR -> {
                     boolean enabled = s.enabled().getAsBoolean();
                     int argb = s.getColor().getAsInt();
-                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0x777777, false);
+                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0xFF777777, false);
 
                     if (enabled) {
                         drawPickButton(ctx, l.btnX, rowY - 2, l.btnW, l.btnH, mouseX, mouseY);
                         drawSwatch(ctx, l.btnX - 18, rowY - 1, argb);
                     } else {
-                        ctx.drawText(textRenderer, "-", l.btnX + 26, rowY, 0x777777, false);
+                        ctx.drawText(textRenderer, "-", l.btnX + 26, rowY, 0xFF777777, false);
                     }
                 }
 
                 case SLIDER -> {
                     boolean enabled = s.enabled().getAsBoolean();
                     float val = (float) s.getFloat().getAsDouble();
-                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0x777777, false);
+                    ctx.drawText(textRenderer, s.label(), l.startX, rowY, enabled ? 0xFFFFFFFF : 0xFF777777, false);
                     drawSliderRow(ctx, l, rowY, mouseX, mouseY, val, s.min(), s.max(), s.step(), enabled);
                 }
             }
@@ -607,7 +607,7 @@ public class HudEditorScreen extends Screen {
         ctx.drawText(textRenderer, v,
                 barX + (barW / 2) - (textRenderer.getWidth(v) / 2),
                 rowY + 1,
-                enabled ? 0xAAAAAA : 0x777777,
+                enabled ? 0xFFAAAAAA : 0xFF777777,
                 false
         );
     }
