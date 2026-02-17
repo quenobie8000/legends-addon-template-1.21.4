@@ -125,7 +125,7 @@ public class HudEditorScreen extends Screen {
 
             int x1 = x + 5;
             int y1 = y;
-            int x2 = x + PANEL_WIDTH - ROW_HEIGHT - 5;
+            int x2 = widget.hasSettings() ? x + PANEL_WIDTH - ROW_HEIGHT - 5 : x + PANEL_WIDTH - 5 ;
             int y2 = y + ROW_HEIGHT;
 
             // toggle enable
@@ -135,18 +135,20 @@ public class HudEditorScreen extends Screen {
                 return true;
             }
 
-            // settings button area
-            int sx1 = x + PANEL_WIDTH - ROW_HEIGHT - 5;
-            int sy1 = y;
-            int sx2 = x + PANEL_WIDTH - 5;
-            int sy2 = y + ROW_HEIGHT;
+            if (widget.hasSettings()) {
+                // settings button area
+                int sx1 = x + PANEL_WIDTH - ROW_HEIGHT - 5;
+                int sy1 = y;
+                int sx2 = x + PANEL_WIDTH - 5;
+                int sy2 = y + ROW_HEIGHT;
 
-            if (inside(mouseX, mouseY, sx1, sy1, sx2 - sx1, sy2 - sy1)) {
-                settingsWidget = widget;
-                colorPicker = null;
-                openColorKey = null;
-                draggingSliderKey = null;
-                return true;
+                if (inside(mouseX, mouseY, sx1, sy1, sx2 - sx1, sy2 - sy1)) {
+                    settingsWidget = widget;
+                    colorPicker = null;
+                    openColorKey = null;
+                    draggingSliderKey = null;
+                    return true;
+                }
             }
 
             y += ROW_HEIGHT + 2;
@@ -448,25 +450,27 @@ public class HudEditorScreen extends Screen {
                     false
             );
 
-            // settings button
-            ctx.fill(
-                    x + PANEL_WIDTH - ROW_HEIGHT - 5,
-                    y,
-                    x + PANEL_WIDTH - 5,
-                    y + ROW_HEIGHT,
-                    0xFF7F8C8D
-            );
-            ctx.drawText(
-                    MinecraftClient.getInstance().textRenderer,
-                    "⚙",
-                    x + PANEL_WIDTH - ROW_HEIGHT - 1,
-                    y + 3,
-                    0xFFFFFFFF,
-                    false
-            );
-
+            if (widget.hasSettings()) {
+                // settings button
+                ctx.fill(
+                        x + PANEL_WIDTH - ROW_HEIGHT - 5,
+                        y,
+                        x + PANEL_WIDTH - 5,
+                        y + ROW_HEIGHT,
+                        0xFF7F8C8D
+                );
+                ctx.drawText(
+                        MinecraftClient.getInstance().textRenderer,
+                        "⚙",
+                        x + PANEL_WIDTH - ROW_HEIGHT - 1,
+                        y + 3,
+                        0xFFFFFFFF,
+                        false
+                );
+            }
             y += ROW_HEIGHT + 2;
         }
+
     }
 
     private void renderSettingsModal(DrawContext ctx, int mouseX, int mouseY) {

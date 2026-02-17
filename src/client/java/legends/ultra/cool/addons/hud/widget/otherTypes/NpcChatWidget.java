@@ -32,7 +32,6 @@ public class NpcChatWidget extends HudWidget {
         if (client == null || client.player == null) {
             return false;
         }
-        System.out.println(message);
         client.player.sendMessage(message, true);
         return true;
     }
@@ -51,7 +50,7 @@ public class NpcChatWidget extends HudWidget {
     }
 
     @Override
-    public List<HudSetting> getSettings() {
-        return List.of();
+    public boolean hasSettings() {
+        return false;
     }
 }
