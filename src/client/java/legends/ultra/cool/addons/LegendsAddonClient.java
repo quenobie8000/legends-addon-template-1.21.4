@@ -8,6 +8,7 @@ import legends.ultra.cool.addons.hud.HudRenderer;
 import legends.ultra.cool.addons.hud.HudWidget;
 import legends.ultra.cool.addons.hud.widget.TimerWidget;
 import legends.ultra.cool.addons.hud.widget.otherTypes.NameplateWidget;
+import legends.ultra.cool.addons.hud.widget.otherTypes.ReiWidget;
 import legends.ultra.cool.addons.hud.widget.CounterWidget;
 import legends.ultra.cool.addons.hud.widget.TextWidget;
 import legends.ultra.cool.addons.input.Keybinds;
@@ -36,11 +37,13 @@ public class LegendsAddonClient implements ClientModInitializer {
         CounterWidget counterWidget = new CounterWidget(10, 30);
         TimerWidget timerWidget = new TimerWidget(10, 50);
         NameplateWidget nameplateWidget = new NameplateWidget();
+        ReiWidget reiWidget = new ReiWidget();
 
         addWidget(textWidget);
         addWidget(counterWidget);
         addWidget(timerWidget);
         addWidget(nameplateWidget);
+        addWidget(reiWidget);
 
         for (HudWidget widget : HudManager.getWidgets()) {
             WidgetConfigManager.registerWidget(widget);
@@ -49,6 +52,9 @@ public class LegendsAddonClient implements ClientModInitializer {
 
     public void addWidget(HudWidget w) {
         WidgetConfigManager.registerWidget(w);
+        if (w instanceof ReiWidget reiWidget) {
+            reiWidget.syncOverlayVisibility();
+        }
         HudManager.register(w);
     }
 }

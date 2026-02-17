@@ -2,6 +2,7 @@ package legends.ultra.cool.addons.rei;
 
 import dev.architectury.event.EventResult;
 import legends.ultra.cool.addons.LegendsAddon;
+import legends.ultra.cool.addons.hud.widget.otherTypes.ReiWidget;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
@@ -22,7 +23,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
@@ -60,9 +60,9 @@ public class LegendsReiPlugin implements REIClientPlugin {
             itemIndex = ItemDumpLoader.loadItemIndex();
             if (itemIndex.items().isEmpty()) {
                 ItemDumpLoader.DumpedItem fallback = new ItemDumpLoader.DumpedItem(
-                        "vampiric_dagger",
-                        "Vampiric Dagger",
-                        addFake(Items.IRON_SWORD, "Vampiric Dagger", 3)
+                        "null",
+                        "NULL",
+                        new ItemStack(Items.BARRIER)
                 );
                 itemIndex = ItemDumpLoader.ItemIndex.fromItems(List.of(fallback));
             }
@@ -83,9 +83,11 @@ public class LegendsReiPlugin implements REIClientPlugin {
 
     @Override
     public void registerEntries(EntryRegistry registry) {
-        registry.removeEntryIf(entry ->
-            entry.getType().equals(VanillaEntryTypes.ITEM) || entry.getType().equals(VanillaEntryTypes.FLUID)
-        );
+        if (!ReiWidget.showVanillaItems()) {
+            registry.removeEntryIf(entry ->
+                entry.getType().equals(VanillaEntryTypes.ITEM) || entry.getType().equals(VanillaEntryTypes.FLUID)
+            );
+        }
 
         for (ItemDumpLoader.DumpedItem dumped : getDumpedItems()) {
             registry.addEntries(EntryStacks.of(dumped.stack()));
@@ -94,13 +96,12 @@ public class LegendsReiPlugin implements REIClientPlugin {
 
     @Override
     public void registerCategories(CategoryRegistry registry) {
-        ItemDumpLoader.DumpedItem iconItem = getDumpedItems().get(0);
         registry.add(new LegendsReiCategory(
-                EntryStacks.of(iconItem.stack()), // icon
+                EntryStacks.of(new ItemStack(Items.EMERALD)), // icon
                 Text.literal("Trade")
         ));
         registry.add(new LegendsReiDropCategory(
-                EntryStacks.of(iconItem.stack()),
+                EntryStacks.of(new ItemStack(Items.ROTTEN_FLESH)),
                 Text.literal("Drops")
         ));
     }

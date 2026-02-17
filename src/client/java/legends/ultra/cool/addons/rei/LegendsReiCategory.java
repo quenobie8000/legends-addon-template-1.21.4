@@ -83,9 +83,9 @@ public class LegendsReiCategory implements DisplayCategory<LegendsReiDisplay> {
         int contentTop = bounds.y + PADDING + LABEL_HEIGHT;
         int contentHeight = Math.max(SLOT_SIZE, bounds.height - LABEL_HEIGHT - (PADDING * 2));
 
-        int outputX = bounds.x + PADDING;
+        int outputX = bounds.x + PADDING + 30;
         int outputY = contentTop + (contentHeight - SLOT_SIZE) / 2;
-        int outputRightX = outputX + SLOT_SIZE;
+        int outputRightX = outputX + SLOT_SIZE - 1;
         int outputCenterY = outputY + SLOT_SIZE / 2;
 
         widgets.add(
@@ -101,7 +101,7 @@ public class LegendsReiCategory implements DisplayCategory<LegendsReiDisplay> {
                 inputGap = Math.max(MIN_INPUT_GAP, Math.min(MAX_INPUT_GAP, maxGap));
             }
 
-            int inputX = bounds.x + bounds.width - PADDING - SLOT_SIZE;
+            int inputX = bounds.x + bounds.width - PADDING - SLOT_SIZE - 30;
             int totalInputsHeight = inputCount * SLOT_SIZE + (inputCount - 1) * inputGap;
             int inputTop = contentTop + (contentHeight - totalInputsHeight) / 2;
             int branchX = inputX - 8;
